@@ -59,7 +59,13 @@ Aionis is designed as a long-running memory kernel to address those requirements
 - Auto capture on `agent_end` with `POST /v1/memory/write`
 - Auto policy feedback on successful turns with `POST /v1/memory/tools/feedback`
 - Exposes policy actions: `POST /v1/memory/tools/select`, `POST /v1/memory/tools/feedback`
-- Manual tools: `aionis_memory_search`, `aionis_memory_store`, `aionis_memory_context`, `aionis_policy_select`, `aionis_policy_feedback`
+- Exposes replay actions:
+  - record: `POST /v1/memory/replay/run/start`, `step/before`, `step/after`, `run/end`
+  - query/compile: `POST /v1/memory/replay/runs/get`, `playbooks/compile_from_run`, `playbooks/get`
+  - lifecycle/run: `POST /v1/memory/replay/playbooks/promote`, `playbooks/repair`, `playbooks/repair/review`, `playbooks/run`
+- Manual tools:
+  - memory/policy: `aionis_memory_search`, `aionis_memory_store`, `aionis_memory_context`, `aionis_policy_select`, `aionis_policy_feedback`
+  - replay: `aionis_replay_run_start`, `aionis_replay_step_before`, `aionis_replay_step_after`, `aionis_replay_run_end`, `aionis_replay_run_get`, `aionis_replay_playbook_compile`, `aionis_replay_playbook_get`, `aionis_replay_playbook_promote`, `aionis_replay_playbook_repair`, `aionis_replay_playbook_repair_review`, `aionis_replay_playbook_run`
 
 ## 30-second setup
 
@@ -67,6 +73,12 @@ Aionis is designed as a long-running memory kernel to address those requirements
 openclaw plugins install @aionis/openclaw && \
 openclaw aionis-memory bootstrap && \
 openclaw aionis-memory selfcheck --scope clawbot:selfcheck
+```
+
+Replay path selfcheck:
+
+```bash
+openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode simulate
 ```
 
 ## Project isolation in Clawbot
@@ -128,6 +140,7 @@ openclaw aionis-memory bootstrap
 
 ```bash
 openclaw aionis-memory selfcheck --scope clawbot:selfcheck
+openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode simulate
 ```
 
 ## Configuration

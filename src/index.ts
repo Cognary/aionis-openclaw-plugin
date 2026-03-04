@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
@@ -60,6 +60,9 @@ type ToolDecision = {
   candidates?: string[];
   request_id?: string | null;
 };
+
+type ReplayRunMode = "strict" | "guided" | "simulate";
+type ReplaySafetyLevel = "auto_ok" | "needs_confirm" | "manual_only";
 
 const ConfigSchema = z.object({
   baseUrl: z.string().url().default(process.env.AIONIS_BASE_URL ?? "http://127.0.0.1:3001"),
@@ -485,6 +488,263 @@ class AionisClient {
       input_text: args.inputText,
     });
   }
+
+  async replayRunStart(args: {
+    scope: string;
+    goal: string;
+    runId?: string;
+    contextSnapshotRef?: string;
+    contextSnapshotHash?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<any> {
+    return this.post("/v1/memory/replay/run/start", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      actor: this.cfg.actor,
+      goal: args.goal,
+      ...(args.runId ? { run_id: args.runId } : {}),
+      ...(args.contextSnapshotRef ? { context_snapshot_ref: args.contextSnapshotRef } : {}),
+      ...(args.contextSnapshotHash ? { context_snapshot_hash: args.contextSnapshotHash } : {}),
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+    });
+  }
+
+  async replayStepBefore(args: {
+    scope: string;
+    runId: string;
+    stepIndex: number;
+    toolName: string;
+    toolInput: unknown;
+    stepId?: string;
+    decisionId?: string;
+    expectedOutputSignature?: unknown;
+    preconditions?: unknown[];
+    retryPolicy?: Record<string, unknown>;
+    safetyLevel?: ReplaySafetyLevel;
+    metadata?: Record<string, unknown>;
+  }): Promise<any> {
+    return this.post("/v1/memory/replay/step/before", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      actor: this.cfg.actor,
+      run_id: args.runId,
+      step_index: args.stepIndex,
+      tool_name: args.toolName,
+      tool_input: args.toolInput,
+      ...(args.stepId ? { step_id: args.stepId } : {}),
+      ...(args.decisionId ? { decision_id: args.decisionId } : {}),
+      ...(args.expectedOutputSignature !== undefined ? { expected_output_signature: args.expectedOutputSignature } : {}),
+      ...(Array.isArray(args.preconditions) ? { preconditions: args.preconditions } : {}),
+      ...(args.retryPolicy ? { retry_policy: args.retryPolicy } : {}),
+      ...(args.safetyLevel ? { safety_level: args.safetyLevel } : {}),
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+    });
+  }
+
+  async replayStepAfter(args: {
+    scope: string;
+    runId: string;
+    status: "success" | "failed" | "skipped" | "partial";
+    stepId?: string;
+    stepIndex?: number;
+    outputSignature?: unknown;
+    postconditions?: unknown[];
+    artifactRefs?: string[];
+    repairApplied?: boolean;
+    repairNote?: string;
+    error?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<any> {
+    return this.post("/v1/memory/replay/step/after", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      actor: this.cfg.actor,
+      run_id: args.runId,
+      status: args.status,
+      ...(args.stepId ? { step_id: args.stepId } : {}),
+      ...(Number.isFinite(args.stepIndex) ? { step_index: args.stepIndex } : {}),
+      ...(args.outputSignature !== undefined ? { output_signature: args.outputSignature } : {}),
+      ...(Array.isArray(args.postconditions) ? { postconditions: args.postconditions } : {}),
+      ...(Array.isArray(args.artifactRefs) ? { artifact_refs: args.artifactRefs } : {}),
+      ...(typeof args.repairApplied === "boolean" ? { repair_applied: args.repairApplied } : {}),
+      ...(args.repairNote ? { repair_note: args.repairNote } : {}),
+      ...(args.error ? { error: args.error } : {}),
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+    });
+  }
+
+  async replayRunEnd(args: {
+    scope: string;
+    runId: string;
+    status: "success" | "failed" | "partial";
+    summary?: string;
+    successCriteria?: Record<string, unknown>;
+    metrics?: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
+  }): Promise<any> {
+    return this.post("/v1/memory/replay/run/end", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      actor: this.cfg.actor,
+      run_id: args.runId,
+      status: args.status,
+      ...(args.summary ? { summary: args.summary } : {}),
+      ...(args.successCriteria ? { success_criteria: args.successCriteria } : {}),
+      ...(args.metrics ? { metrics: args.metrics } : {}),
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+    });
+  }
+
+  async replayRunGet(args: {
+    scope: string;
+    runId: string;
+    includeSteps?: boolean;
+    includeArtifacts?: boolean;
+  }): Promise<any> {
+    return this.post("/v1/memory/replay/runs/get", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      run_id: args.runId,
+      ...(typeof args.includeSteps === "boolean" ? { include_steps: args.includeSteps } : {}),
+      ...(typeof args.includeArtifacts === "boolean" ? { include_artifacts: args.includeArtifacts } : {}),
+    });
+  }
+
+  async replayPlaybookCompileFromRun(args: {
+    scope: string;
+    runId: string;
+    playbookId?: string;
+    name?: string;
+    version?: number;
+    matchers?: Record<string, unknown>;
+    successCriteria?: Record<string, unknown>;
+    riskProfile?: "low" | "medium" | "high";
+    allowPartial?: boolean;
+    metadata?: Record<string, unknown>;
+  }): Promise<any> {
+    return this.post("/v1/memory/replay/playbooks/compile_from_run", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      actor: this.cfg.actor,
+      run_id: args.runId,
+      ...(args.playbookId ? { playbook_id: args.playbookId } : {}),
+      ...(args.name ? { name: args.name } : {}),
+      ...(Number.isFinite(args.version) ? { version: args.version } : {}),
+      ...(args.matchers ? { matchers: args.matchers } : {}),
+      ...(args.successCriteria ? { success_criteria: args.successCriteria } : {}),
+      ...(args.riskProfile ? { risk_profile: args.riskProfile } : {}),
+      ...(typeof args.allowPartial === "boolean" ? { allow_partial: args.allowPartial } : {}),
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+    });
+  }
+
+  async replayPlaybookGet(args: { scope: string; playbookId: string }): Promise<any> {
+    return this.post("/v1/memory/replay/playbooks/get", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      playbook_id: args.playbookId,
+    });
+  }
+
+  async replayPlaybookPromote(args: {
+    scope: string;
+    playbookId: string;
+    targetStatus: "draft" | "shadow" | "active" | "disabled";
+    fromVersion?: number;
+    note?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<any> {
+    return this.post("/v1/memory/replay/playbooks/promote", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      actor: this.cfg.actor,
+      playbook_id: args.playbookId,
+      target_status: args.targetStatus,
+      ...(Number.isFinite(args.fromVersion) ? { from_version: args.fromVersion } : {}),
+      ...(args.note ? { note: args.note } : {}),
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+    });
+  }
+
+  async replayPlaybookRepair(args: {
+    scope: string;
+    playbookId: string;
+    patch: Record<string, unknown>;
+    fromVersion?: number;
+    note?: string;
+    reviewRequired?: boolean;
+    targetStatus?: "draft" | "shadow" | "active" | "disabled";
+    metadata?: Record<string, unknown>;
+  }): Promise<any> {
+    return this.post("/v1/memory/replay/playbooks/repair", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      actor: this.cfg.actor,
+      playbook_id: args.playbookId,
+      patch: args.patch,
+      ...(Number.isFinite(args.fromVersion) ? { from_version: args.fromVersion } : {}),
+      ...(args.note ? { note: args.note } : {}),
+      ...(typeof args.reviewRequired === "boolean" ? { review_required: args.reviewRequired } : {}),
+      ...(args.targetStatus ? { target_status: args.targetStatus } : {}),
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+    });
+  }
+
+  async replayPlaybookRepairReview(args: {
+    scope: string;
+    playbookId: string;
+    action: "approve" | "reject";
+    version?: number;
+    note?: string;
+    autoShadowValidate?: boolean;
+    shadowValidationMode?: "readiness" | "execute" | "execute_sandbox";
+    shadowValidationMaxSteps?: number;
+    shadowValidationParams?: Record<string, unknown>;
+    targetStatusOnApprove?: "draft" | "shadow" | "active" | "disabled";
+    autoPromoteOnPass?: boolean;
+    autoPromoteTargetStatus?: "draft" | "shadow" | "active" | "disabled";
+    autoPromoteGate?: Record<string, unknown>;
+    metadata?: Record<string, unknown>;
+  }): Promise<any> {
+    return this.post("/v1/memory/replay/playbooks/repair/review", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      actor: this.cfg.actor,
+      playbook_id: args.playbookId,
+      action: args.action,
+      ...(Number.isFinite(args.version) ? { version: args.version } : {}),
+      ...(args.note ? { note: args.note } : {}),
+      ...(typeof args.autoShadowValidate === "boolean" ? { auto_shadow_validate: args.autoShadowValidate } : {}),
+      ...(args.shadowValidationMode ? { shadow_validation_mode: args.shadowValidationMode } : {}),
+      ...(Number.isFinite(args.shadowValidationMaxSteps) ? { shadow_validation_max_steps: args.shadowValidationMaxSteps } : {}),
+      ...(args.shadowValidationParams ? { shadow_validation_params: args.shadowValidationParams } : {}),
+      ...(args.targetStatusOnApprove ? { target_status_on_approve: args.targetStatusOnApprove } : {}),
+      ...(typeof args.autoPromoteOnPass === "boolean" ? { auto_promote_on_pass: args.autoPromoteOnPass } : {}),
+      ...(args.autoPromoteTargetStatus ? { auto_promote_target_status: args.autoPromoteTargetStatus } : {}),
+      ...(args.autoPromoteGate ? { auto_promote_gate: args.autoPromoteGate } : {}),
+      ...(args.metadata ? { metadata: args.metadata } : {}),
+    });
+  }
+
+  async replayPlaybookRun(args: {
+    scope: string;
+    playbookId: string;
+    mode: ReplayRunMode;
+    version?: number;
+    params?: Record<string, unknown>;
+    maxSteps?: number;
+  }): Promise<any> {
+    return this.post("/v1/memory/replay/playbooks/run", {
+      tenant_id: this.cfg.tenantId,
+      scope: args.scope,
+      actor: this.cfg.actor,
+      playbook_id: args.playbookId,
+      mode: args.mode,
+      ...(Number.isFinite(args.version) ? { version: args.version } : {}),
+      ...(args.params ? { params: args.params } : {}),
+      ...(Number.isFinite(args.maxSteps) ? { max_steps: args.maxSteps } : {}),
+    });
+  }
 }
 
 const plugin = {
@@ -703,6 +963,522 @@ const plugin = {
       { name: "aionis_policy_feedback" },
     );
 
+    api.registerTool(
+      {
+        name: "aionis_replay_run_start",
+        label: "Aionis Replay Run Start",
+        description: "Start a replay run envelope.",
+        parameters: Type.Object({
+          goal: Type.String({ minLength: 1 }),
+          runId: Type.Optional(Type.String({ minLength: 1 })),
+          contextSnapshotRef: Type.Optional(Type.String({ minLength: 1 })),
+          contextSnapshotHash: Type.Optional(Type.String({ minLength: 64, maxLength: 64 })),
+          metadata: Type.Optional(Type.Any()),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const goal = String(p.goal ?? "").trim();
+            if (!goal) return toToolText("goal is required", { ok: false });
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const out = await client.replayRunStart({
+              scope,
+              goal,
+              runId: typeof p.runId === "string" && p.runId.trim() ? p.runId.trim() : undefined,
+              contextSnapshotRef: typeof p.contextSnapshotRef === "string" && p.contextSnapshotRef.trim()
+                ? p.contextSnapshotRef.trim()
+                : undefined,
+              contextSnapshotHash: typeof p.contextSnapshotHash === "string" && p.contextSnapshotHash.trim()
+                ? p.contextSnapshotHash.trim()
+                : undefined,
+              metadata: p.metadata && typeof p.metadata === "object" && !Array.isArray(p.metadata)
+                ? (p.metadata as Record<string, unknown>)
+                : undefined,
+            });
+            return toToolText(`Replay run started (run_id=${String(out?.run_id ?? out?.run?.run_id ?? "n/a")})`, out);
+          } catch (err) {
+            return toToolText(`aionis_replay_run_start failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_run_start" },
+    );
+
+    api.registerTool(
+      {
+        name: "aionis_replay_step_before",
+        label: "Aionis Replay Step Before",
+        description: "Record one replay step before execution.",
+        parameters: Type.Object({
+          runId: Type.String({ minLength: 1 }),
+          stepIndex: Type.Number({ minimum: 1 }),
+          toolName: Type.String({ minLength: 1 }),
+          toolInput: Type.Any(),
+          stepId: Type.Optional(Type.String({ minLength: 1 })),
+          decisionId: Type.Optional(Type.String({ minLength: 1 })),
+          expectedOutputSignature: Type.Optional(Type.Any()),
+          preconditions: Type.Optional(Type.Array(Type.Any())),
+          retryPolicy: Type.Optional(Type.Any()),
+          safetyLevel: Type.Optional(Type.Union([Type.Literal("auto_ok"), Type.Literal("needs_confirm"), Type.Literal("manual_only")])),
+          metadata: Type.Optional(Type.Any()),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const runId = String(p.runId ?? "").trim();
+            const toolName = String(p.toolName ?? "").trim();
+            const stepIndex = Number(p.stepIndex ?? 0);
+            if (!runId || !toolName || !Number.isInteger(stepIndex) || stepIndex <= 0) {
+              return toToolText("runId, toolName, and positive integer stepIndex are required", { ok: false });
+            }
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const safetyRaw = String(p.safetyLevel ?? "");
+            const safetyLevel: ReplaySafetyLevel | undefined = safetyRaw === "auto_ok" || safetyRaw === "needs_confirm" || safetyRaw === "manual_only"
+              ? (safetyRaw as ReplaySafetyLevel)
+              : undefined;
+            const out = await client.replayStepBefore({
+              scope,
+              runId,
+              stepIndex,
+              toolName,
+              toolInput: p.toolInput ?? {},
+              stepId: typeof p.stepId === "string" && p.stepId.trim() ? p.stepId.trim() : undefined,
+              decisionId: typeof p.decisionId === "string" && p.decisionId.trim() ? p.decisionId.trim() : undefined,
+              expectedOutputSignature: p.expectedOutputSignature,
+              preconditions: Array.isArray(p.preconditions) ? p.preconditions : undefined,
+              retryPolicy: p.retryPolicy && typeof p.retryPolicy === "object" && !Array.isArray(p.retryPolicy)
+                ? (p.retryPolicy as Record<string, unknown>)
+                : undefined,
+              safetyLevel,
+              metadata: p.metadata && typeof p.metadata === "object" && !Array.isArray(p.metadata)
+                ? (p.metadata as Record<string, unknown>)
+                : undefined,
+            });
+            return toToolText("Replay step(before) stored.", out);
+          } catch (err) {
+            return toToolText(`aionis_replay_step_before failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_step_before" },
+    );
+
+    api.registerTool(
+      {
+        name: "aionis_replay_step_after",
+        label: "Aionis Replay Step After",
+        description: "Record one replay step result after execution.",
+        parameters: Type.Object({
+          runId: Type.String({ minLength: 1 }),
+          status: Type.Union([Type.Literal("success"), Type.Literal("failed"), Type.Literal("skipped"), Type.Literal("partial")]),
+          stepId: Type.Optional(Type.String({ minLength: 1 })),
+          stepIndex: Type.Optional(Type.Number({ minimum: 1 })),
+          outputSignature: Type.Optional(Type.Any()),
+          postconditions: Type.Optional(Type.Array(Type.Any())),
+          artifactRefs: Type.Optional(Type.Array(Type.String({ minLength: 1 }))),
+          repairApplied: Type.Optional(Type.Boolean()),
+          repairNote: Type.Optional(Type.String({ minLength: 1 })),
+          error: Type.Optional(Type.String({ minLength: 1 })),
+          metadata: Type.Optional(Type.Any()),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const runId = String(p.runId ?? "").trim();
+            const statusRaw = String(p.status ?? "");
+            const status = statusRaw === "success" || statusRaw === "failed" || statusRaw === "skipped" || statusRaw === "partial"
+              ? statusRaw
+              : "";
+            if (!runId || !status) return toToolText("runId and valid status are required", { ok: false });
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const out = await client.replayStepAfter({
+              scope,
+              runId,
+              status,
+              stepId: typeof p.stepId === "string" && p.stepId.trim() ? p.stepId.trim() : undefined,
+              stepIndex: Number.isInteger(p.stepIndex as number) ? Number(p.stepIndex) : undefined,
+              outputSignature: p.outputSignature,
+              postconditions: Array.isArray(p.postconditions) ? p.postconditions : undefined,
+              artifactRefs: Array.isArray(p.artifactRefs)
+                ? p.artifactRefs.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+                : undefined,
+              repairApplied: typeof p.repairApplied === "boolean" ? p.repairApplied : undefined,
+              repairNote: typeof p.repairNote === "string" && p.repairNote.trim() ? p.repairNote.trim() : undefined,
+              error: typeof p.error === "string" && p.error.trim() ? p.error.trim() : undefined,
+              metadata: p.metadata && typeof p.metadata === "object" && !Array.isArray(p.metadata)
+                ? (p.metadata as Record<string, unknown>)
+                : undefined,
+            });
+            return toToolText("Replay step(after) stored.", out);
+          } catch (err) {
+            return toToolText(`aionis_replay_step_after failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_step_after" },
+    );
+
+    api.registerTool(
+      {
+        name: "aionis_replay_run_end",
+        label: "Aionis Replay Run End",
+        description: "Close replay run with final status and summary.",
+        parameters: Type.Object({
+          runId: Type.String({ minLength: 1 }),
+          status: Type.Union([Type.Literal("success"), Type.Literal("failed"), Type.Literal("partial")]),
+          summary: Type.Optional(Type.String({ minLength: 1 })),
+          successCriteria: Type.Optional(Type.Any()),
+          metrics: Type.Optional(Type.Any()),
+          metadata: Type.Optional(Type.Any()),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const runId = String(p.runId ?? "").trim();
+            const statusRaw = String(p.status ?? "");
+            const status = statusRaw === "success" || statusRaw === "failed" || statusRaw === "partial" ? statusRaw : "";
+            if (!runId || !status) return toToolText("runId and valid status are required", { ok: false });
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const out = await client.replayRunEnd({
+              scope,
+              runId,
+              status,
+              summary: typeof p.summary === "string" && p.summary.trim() ? p.summary.trim() : undefined,
+              successCriteria: p.successCriteria && typeof p.successCriteria === "object" && !Array.isArray(p.successCriteria)
+                ? (p.successCriteria as Record<string, unknown>)
+                : undefined,
+              metrics: p.metrics && typeof p.metrics === "object" && !Array.isArray(p.metrics)
+                ? (p.metrics as Record<string, unknown>)
+                : undefined,
+              metadata: p.metadata && typeof p.metadata === "object" && !Array.isArray(p.metadata)
+                ? (p.metadata as Record<string, unknown>)
+                : undefined,
+            });
+            return toToolText("Replay run closed.", out);
+          } catch (err) {
+            return toToolText(`aionis_replay_run_end failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_run_end" },
+    );
+
+    api.registerTool(
+      {
+        name: "aionis_replay_run_get",
+        label: "Aionis Replay Run Get",
+        description: "Read one replay run timeline and artifacts.",
+        parameters: Type.Object({
+          runId: Type.String({ minLength: 1 }),
+          includeSteps: Type.Optional(Type.Boolean()),
+          includeArtifacts: Type.Optional(Type.Boolean()),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const runId = String(p.runId ?? "").trim();
+            if (!runId) return toToolText("runId is required", { ok: false });
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const out = await client.replayRunGet({
+              scope,
+              runId,
+              includeSteps: typeof p.includeSteps === "boolean" ? p.includeSteps : undefined,
+              includeArtifacts: typeof p.includeArtifacts === "boolean" ? p.includeArtifacts : undefined,
+            });
+            return toToolText(`Replay run fetched (run_id=${runId})`, out);
+          } catch (err) {
+            return toToolText(`aionis_replay_run_get failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_run_get" },
+    );
+
+    api.registerTool(
+      {
+        name: "aionis_replay_playbook_compile",
+        label: "Aionis Replay Playbook Compile",
+        description: "Compile replay playbook from one completed run.",
+        parameters: Type.Object({
+          runId: Type.String({ minLength: 1 }),
+          playbookId: Type.Optional(Type.String({ minLength: 1 })),
+          name: Type.Optional(Type.String({ minLength: 1 })),
+          version: Type.Optional(Type.Number({ minimum: 1 })),
+          matchers: Type.Optional(Type.Any()),
+          successCriteria: Type.Optional(Type.Any()),
+          riskProfile: Type.Optional(Type.Union([Type.Literal("low"), Type.Literal("medium"), Type.Literal("high")])),
+          allowPartial: Type.Optional(Type.Boolean()),
+          metadata: Type.Optional(Type.Any()),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const runId = String(p.runId ?? "").trim();
+            if (!runId) return toToolText("runId is required", { ok: false });
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const riskRaw = String(p.riskProfile ?? "");
+            const riskProfile = riskRaw === "low" || riskRaw === "medium" || riskRaw === "high" ? riskRaw : undefined;
+            const out = await client.replayPlaybookCompileFromRun({
+              scope,
+              runId,
+              playbookId: typeof p.playbookId === "string" && p.playbookId.trim() ? p.playbookId.trim() : undefined,
+              name: typeof p.name === "string" && p.name.trim() ? p.name.trim() : undefined,
+              version: Number.isInteger(p.version as number) ? Number(p.version) : undefined,
+              matchers: p.matchers && typeof p.matchers === "object" && !Array.isArray(p.matchers)
+                ? (p.matchers as Record<string, unknown>)
+                : undefined,
+              successCriteria: p.successCriteria && typeof p.successCriteria === "object" && !Array.isArray(p.successCriteria)
+                ? (p.successCriteria as Record<string, unknown>)
+                : undefined,
+              riskProfile,
+              allowPartial: typeof p.allowPartial === "boolean" ? p.allowPartial : undefined,
+              metadata: p.metadata && typeof p.metadata === "object" && !Array.isArray(p.metadata)
+                ? (p.metadata as Record<string, unknown>)
+                : undefined,
+            });
+            return toToolText(`Replay playbook compiled (playbook_id=${String(out?.playbook_id ?? out?.playbook?.playbook_id ?? "n/a")})`, out);
+          } catch (err) {
+            return toToolText(`aionis_replay_playbook_compile failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_playbook_compile" },
+    );
+
+    api.registerTool(
+      {
+        name: "aionis_replay_playbook_get",
+        label: "Aionis Replay Playbook Get",
+        description: "Read replay playbook by id.",
+        parameters: Type.Object({
+          playbookId: Type.String({ minLength: 1 }),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const playbookId = String(p.playbookId ?? "").trim();
+            if (!playbookId) return toToolText("playbookId is required", { ok: false });
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const out = await client.replayPlaybookGet({ scope, playbookId });
+            return toToolText(`Replay playbook fetched (playbook_id=${playbookId})`, out);
+          } catch (err) {
+            return toToolText(`aionis_replay_playbook_get failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_playbook_get" },
+    );
+
+    api.registerTool(
+      {
+        name: "aionis_replay_playbook_promote",
+        label: "Aionis Replay Playbook Promote",
+        description: "Promote replay playbook lifecycle status.",
+        parameters: Type.Object({
+          playbookId: Type.String({ minLength: 1 }),
+          targetStatus: Type.Union([Type.Literal("draft"), Type.Literal("shadow"), Type.Literal("active"), Type.Literal("disabled")]),
+          fromVersion: Type.Optional(Type.Number({ minimum: 1 })),
+          note: Type.Optional(Type.String({ minLength: 1 })),
+          metadata: Type.Optional(Type.Any()),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const playbookId = String(p.playbookId ?? "").trim();
+            const targetRaw = String(p.targetStatus ?? "");
+            const targetStatus = targetRaw === "draft" || targetRaw === "shadow" || targetRaw === "active" || targetRaw === "disabled"
+              ? targetRaw
+              : "";
+            if (!playbookId || !targetStatus) return toToolText("playbookId and valid targetStatus are required", { ok: false });
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const out = await client.replayPlaybookPromote({
+              scope,
+              playbookId,
+              targetStatus,
+              fromVersion: Number.isInteger(p.fromVersion as number) ? Number(p.fromVersion) : undefined,
+              note: typeof p.note === "string" && p.note.trim() ? p.note.trim() : undefined,
+              metadata: p.metadata && typeof p.metadata === "object" && !Array.isArray(p.metadata)
+                ? (p.metadata as Record<string, unknown>)
+                : undefined,
+            });
+            return toToolText("Replay playbook promoted.", out);
+          } catch (err) {
+            return toToolText(`aionis_replay_playbook_promote failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_playbook_promote" },
+    );
+
+    api.registerTool(
+      {
+        name: "aionis_replay_playbook_repair",
+        label: "Aionis Replay Playbook Repair",
+        description: "Apply repair patch and emit a new replay playbook version.",
+        parameters: Type.Object({
+          playbookId: Type.String({ minLength: 1 }),
+          patch: Type.Any(),
+          fromVersion: Type.Optional(Type.Number({ minimum: 1 })),
+          note: Type.Optional(Type.String({ minLength: 1 })),
+          reviewRequired: Type.Optional(Type.Boolean()),
+          targetStatus: Type.Optional(Type.Union([Type.Literal("draft"), Type.Literal("shadow"), Type.Literal("active"), Type.Literal("disabled")])),
+          metadata: Type.Optional(Type.Any()),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const playbookId = String(p.playbookId ?? "").trim();
+            if (!playbookId) return toToolText("playbookId is required", { ok: false });
+            if (!p.patch || typeof p.patch !== "object" || Array.isArray(p.patch)) {
+              return toToolText("patch object is required", { ok: false });
+            }
+            const targetRaw = String(p.targetStatus ?? "");
+            const targetStatus = targetRaw === "draft" || targetRaw === "shadow" || targetRaw === "active" || targetRaw === "disabled"
+              ? targetRaw
+              : undefined;
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const out = await client.replayPlaybookRepair({
+              scope,
+              playbookId,
+              patch: p.patch as Record<string, unknown>,
+              fromVersion: Number.isInteger(p.fromVersion as number) ? Number(p.fromVersion) : undefined,
+              note: typeof p.note === "string" && p.note.trim() ? p.note.trim() : undefined,
+              reviewRequired: typeof p.reviewRequired === "boolean" ? p.reviewRequired : undefined,
+              targetStatus,
+              metadata: p.metadata && typeof p.metadata === "object" && !Array.isArray(p.metadata)
+                ? (p.metadata as Record<string, unknown>)
+                : undefined,
+            });
+            return toToolText("Replay playbook repair patch submitted.", out);
+          } catch (err) {
+            return toToolText(`aionis_replay_playbook_repair failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_playbook_repair" },
+    );
+
+    api.registerTool(
+      {
+        name: "aionis_replay_playbook_repair_review",
+        label: "Aionis Replay Playbook Repair Review",
+        description: "Review repaired replay playbook version and optional shadow validation.",
+        parameters: Type.Object({
+          playbookId: Type.String({ minLength: 1 }),
+          action: Type.Union([Type.Literal("approve"), Type.Literal("reject")]),
+          version: Type.Optional(Type.Number({ minimum: 1 })),
+          note: Type.Optional(Type.String({ minLength: 1 })),
+          autoShadowValidate: Type.Optional(Type.Boolean()),
+          shadowValidationMode: Type.Optional(Type.Union([Type.Literal("readiness"), Type.Literal("execute"), Type.Literal("execute_sandbox")])),
+          shadowValidationMaxSteps: Type.Optional(Type.Number({ minimum: 1, maximum: 500 })),
+          shadowValidationParams: Type.Optional(Type.Any()),
+          targetStatusOnApprove: Type.Optional(Type.Union([Type.Literal("draft"), Type.Literal("shadow"), Type.Literal("active"), Type.Literal("disabled")])),
+          autoPromoteOnPass: Type.Optional(Type.Boolean()),
+          autoPromoteTargetStatus: Type.Optional(Type.Union([Type.Literal("draft"), Type.Literal("shadow"), Type.Literal("active"), Type.Literal("disabled")])),
+          autoPromoteGate: Type.Optional(Type.Any()),
+          metadata: Type.Optional(Type.Any()),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const playbookId = String(p.playbookId ?? "").trim();
+            const actionRaw = String(p.action ?? "");
+            const action = actionRaw === "approve" || actionRaw === "reject" ? actionRaw : "";
+            if (!playbookId || !action) return toToolText("playbookId and action are required", { ok: false });
+            const modeRaw = String(p.shadowValidationMode ?? "");
+            const shadowValidationMode = modeRaw === "readiness" || modeRaw === "execute" || modeRaw === "execute_sandbox"
+              ? modeRaw
+              : undefined;
+            const targetRaw = String(p.targetStatusOnApprove ?? "");
+            const targetStatusOnApprove = targetRaw === "draft" || targetRaw === "shadow" || targetRaw === "active" || targetRaw === "disabled"
+              ? targetRaw
+              : undefined;
+            const promoteRaw = String(p.autoPromoteTargetStatus ?? "");
+            const autoPromoteTargetStatus = promoteRaw === "draft" || promoteRaw === "shadow" || promoteRaw === "active" || promoteRaw === "disabled"
+              ? promoteRaw
+              : undefined;
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const out = await client.replayPlaybookRepairReview({
+              scope,
+              playbookId,
+              action,
+              version: Number.isInteger(p.version as number) ? Number(p.version) : undefined,
+              note: typeof p.note === "string" && p.note.trim() ? p.note.trim() : undefined,
+              autoShadowValidate: typeof p.autoShadowValidate === "boolean" ? p.autoShadowValidate : undefined,
+              shadowValidationMode,
+              shadowValidationMaxSteps: Number.isInteger(p.shadowValidationMaxSteps as number) ? Number(p.shadowValidationMaxSteps) : undefined,
+              shadowValidationParams: p.shadowValidationParams && typeof p.shadowValidationParams === "object" && !Array.isArray(p.shadowValidationParams)
+                ? (p.shadowValidationParams as Record<string, unknown>)
+                : undefined,
+              targetStatusOnApprove,
+              autoPromoteOnPass: typeof p.autoPromoteOnPass === "boolean" ? p.autoPromoteOnPass : undefined,
+              autoPromoteTargetStatus,
+              autoPromoteGate: p.autoPromoteGate && typeof p.autoPromoteGate === "object" && !Array.isArray(p.autoPromoteGate)
+                ? (p.autoPromoteGate as Record<string, unknown>)
+                : undefined,
+              metadata: p.metadata && typeof p.metadata === "object" && !Array.isArray(p.metadata)
+                ? (p.metadata as Record<string, unknown>)
+                : undefined,
+            });
+            return toToolText("Replay playbook repair review submitted.", out);
+          } catch (err) {
+            return toToolText(`aionis_replay_playbook_repair_review failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_playbook_repair_review" },
+    );
+
+    api.registerTool(
+      {
+        name: "aionis_replay_playbook_run",
+        label: "Aionis Replay Playbook Run",
+        description: "Run replay playbook in simulate/strict/guided mode.",
+        parameters: Type.Object({
+          playbookId: Type.String({ minLength: 1 }),
+          mode: Type.Optional(Type.Union([Type.Literal("simulate"), Type.Literal("strict"), Type.Literal("guided")])),
+          version: Type.Optional(Type.Number({ minimum: 1 })),
+          params: Type.Optional(Type.Any()),
+          maxSteps: Type.Optional(Type.Number({ minimum: 1, maximum: 500 })),
+          scope: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId: string, params: unknown) {
+          try {
+            const p = toRecord(params);
+            const playbookId = String(p.playbookId ?? "").trim();
+            if (!playbookId) return toToolText("playbookId is required", { ok: false });
+            const modeRaw = String(p.mode ?? "simulate");
+            const mode: ReplayRunMode = modeRaw === "strict" || modeRaw === "guided" || modeRaw === "simulate" ? modeRaw : "simulate";
+            const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+            const out = await client.replayPlaybookRun({
+              scope,
+              playbookId,
+              mode,
+              version: Number.isInteger(p.version as number) ? Number(p.version) : undefined,
+              params: p.params && typeof p.params === "object" && !Array.isArray(p.params)
+                ? (p.params as Record<string, unknown>)
+                : undefined,
+              maxSteps: Number.isInteger(p.maxSteps as number) ? Number(p.maxSteps) : undefined,
+            });
+            return toToolText(`Replay playbook executed (mode=${mode}).`, out);
+          } catch (err) {
+            return toToolText(`aionis_replay_playbook_run failed: ${formatError(err)}`, { ok: false, error: err });
+          }
+        },
+      },
+      { name: "aionis_replay_playbook_run" },
+    );
+
     if (typeof api.registerCli === "function") {
       api.registerCli(
         ({ program }) => {
@@ -817,6 +1593,110 @@ const plugin = {
                     {
                       overall_status: "fail",
                       scope,
+                      run_id: runId,
+                      error: formatError(err),
+                    },
+                    null,
+                    2,
+                  ),
+                );
+              }
+            });
+
+          root
+            .command("replay-selfcheck")
+            .description("Run replay record -> compile -> simulate path check")
+            .option("--scope <scope>", "scope override")
+            .option("--mode <mode>", "simulate|strict|guided", "simulate")
+            .action(async (opts: { scope?: string; mode?: string }) => {
+              const scope = opts.scope?.trim() || resolved.scope;
+              const requestedMode = String(opts.mode ?? "simulate").trim().toLowerCase();
+              const mode: ReplayRunMode = requestedMode === "strict" || requestedMode === "guided" || requestedMode === "simulate"
+                ? (requestedMode as ReplayRunMode)
+                : "simulate";
+              const runId = randomUUID();
+              try {
+                const started = await client.replayRunStart({
+                  scope,
+                  runId,
+                  goal: "OpenClaw replay selfcheck flow",
+                  metadata: { source: "openclaw-cli", selfcheck: true },
+                });
+                const startedRunId = String(started?.run_id ?? started?.run?.run_id ?? runId);
+                const stepBefore = await client.replayStepBefore({
+                  scope,
+                  runId: startedRunId,
+                  stepIndex: 1,
+                  toolName: "echo",
+                  toolInput: { argv: ["echo", "aionis replay selfcheck"] },
+                  expectedOutputSignature: { contains: "aionis replay selfcheck" },
+                  preconditions: [{ check: "command_available", command: "echo" }],
+                  safetyLevel: "auto_ok",
+                  metadata: { source: "openclaw-cli", selfcheck: true },
+                });
+                const stepAfter = await client.replayStepAfter({
+                  scope,
+                  runId: startedRunId,
+                  stepId: typeof stepBefore?.step_id === "string" ? stepBefore.step_id : undefined,
+                  stepIndex: 1,
+                  status: "success",
+                  outputSignature: { contains: "aionis replay selfcheck" },
+                  postconditions: [{ check: "stdout_contains", value: "aionis replay selfcheck" }],
+                  metadata: { source: "openclaw-cli", selfcheck: true },
+                });
+                const ended = await client.replayRunEnd({
+                  scope,
+                  runId: startedRunId,
+                  status: "success",
+                  summary: "Replay selfcheck completed",
+                  successCriteria: { replay_api_paths: "ok" },
+                  metrics: { steps: 1 },
+                  metadata: { source: "openclaw-cli", selfcheck: true },
+                });
+                const compiled = await client.replayPlaybookCompileFromRun({
+                  scope,
+                  runId: startedRunId,
+                  name: `openclaw-replay-selfcheck-${new Date().toISOString().slice(0, 10)}`,
+                  riskProfile: "low",
+                  allowPartial: false,
+                  metadata: { source: "openclaw-cli", selfcheck: true },
+                });
+                const playbookId = String(compiled?.playbook_id ?? compiled?.playbook?.playbook_id ?? "");
+                const replayRun = playbookId
+                  ? await client.replayPlaybookRun({
+                    scope,
+                    playbookId,
+                    mode,
+                    params: { selfcheck: true },
+                    maxSteps: 20,
+                  })
+                  : null;
+
+                console.log(
+                  JSON.stringify(
+                    {
+                      overall_status: "pass",
+                      scope,
+                      mode,
+                      run_id: startedRunId,
+                      step_id: stepBefore?.step_id ?? null,
+                      run_end_status: ended?.status ?? "success",
+                      playbook_id: playbookId || null,
+                      replay_status: replayRun?.status ?? replayRun?.run_status ?? replayRun?.result?.status ?? null,
+                      replay_run_id: replayRun?.run_id ?? replayRun?.replay_run_id ?? null,
+                      step_after_ok: !!stepAfter,
+                    },
+                    null,
+                    2,
+                  ),
+                );
+              } catch (err) {
+                console.error(
+                  JSON.stringify(
+                    {
+                      overall_status: "fail",
+                      scope,
+                      mode,
                       run_id: runId,
                       error: formatError(err),
                     },

@@ -39,6 +39,7 @@ Restart your OpenClaw/Clawbot process so the plugin reloads with new config.
 
 ```bash
 openclaw aionis-memory selfcheck --scope clawbot:selfcheck
+openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode simulate
 ```
 
 Expected output contains:
@@ -48,6 +49,14 @@ Expected output contains:
   "overall_status": "pass"
 }
 ```
+
+`replay-selfcheck` validates:
+
+1. replay run start
+2. step before/after recording
+3. run end
+4. playbook compile from run
+5. playbook run (simulate/strict/guided)
 
 ## 6. Start using in normal chat
 
@@ -69,6 +78,9 @@ Default scope mode can be:
   - rerun `openclaw aionis-memory bootstrap`
 - `404 Route ... not found`:
   - check `baseUrl` and Aionis version
+- `replay-selfcheck` fails on strict/guided:
+  - Aionis replay strict/guided requires local executor policy and allowlisted command tools
+  - use `--mode simulate` first to validate API path
 - `500 internal_error`:
   - avoid running multiple standalone containers with the same data volume
   - keep one standalone container for one data volume
