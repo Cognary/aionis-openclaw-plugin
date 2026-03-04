@@ -1,5 +1,5 @@
 {
-  "name": "openclaw-aionis-memory",
+  "name": "@aionis/openclaw",
   "version": "0.1.1",
   "description": "OpenClaw memory plugin powered by Aionis standalone or hosted API",
   "type": "module",
@@ -32,7 +32,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Cognary/openclaw-aionis-memory.git"
+    "url": "https://github.com/Cognary/aionis-openclaw-plugin.git"
   },
   "keywords": [
     "openclaw",

@@ -10,7 +10,7 @@ This guide is for end users who want local-first setup with one-click style comm
 ## 2. Install plugin from npm
 
 ```bash
-openclaw plugins install openclaw-aionis-memory
+openclaw plugins install @aionis/openclaw
 ```
 
 ## 3. One-command bootstrap (recommended)

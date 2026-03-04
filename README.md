@@ -1,7 +1,7 @@
 # OpenClaw Aionis Memory Plugin
 
-[![npm version](https://img.shields.io/npm/v/openclaw-aionis-memory.svg)](https://www.npmjs.com/package/openclaw-aionis-memory)
-[![npm downloads](https://img.shields.io/npm/dm/openclaw-aionis-memory.svg)](https://www.npmjs.com/package/openclaw-aionis-memory)
+[![npm version](https://img.shields.io/npm/v/%40aionis%2Fopenclaw.svg)](https://www.npmjs.com/package/@aionis/openclaw)
+[![npm downloads](https://img.shields.io/npm/dm/%40aionis%2Fopenclaw.svg)](https://www.npmjs.com/package/@aionis/openclaw)
 [![GitHub release](https://img.shields.io/github/v/release/Cognary/aionis-openclaw-plugin)](https://github.com/Cognary/aionis-openclaw-plugin/releases)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Cognary/aionis-openclaw-plugin/blob/main/LICENSE)
 
@@ -64,7 +64,7 @@ Aionis is designed as a long-running memory kernel to address those requirements
 ## 30-second setup
 
 ```bash
-openclaw plugins install openclaw-aionis-memory && \
+openclaw plugins install @aionis/openclaw && \
 openclaw aionis-memory bootstrap && \
 openclaw aionis-memory selfcheck --scope clawbot:selfcheck
 ```
@@ -115,7 +115,7 @@ This script writes:
 2. Install plugin (from npm):
 
 ```bash
-openclaw plugins install openclaw-aionis-memory
+openclaw plugins install @aionis/openclaw
 ```
 
 3. Bootstrap plugin config automatically:

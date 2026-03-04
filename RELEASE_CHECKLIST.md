@@ -16,12 +16,12 @@ Expected: `release preflight passed`
 
 Expected artifact path:
 
-- `artifacts/openclaw-aionis-memory-<version>.tgz`
+- `artifacts/aionis-openclaw-<version>.tgz`
 
 ## 3. Local install test (OpenClaw)
 
 ```bash
-openclaw plugins install ./artifacts/openclaw-aionis-memory-<version>.tgz
+openclaw plugins install ./artifacts/aionis-openclaw-<version>.tgz
 openclaw plugins info openclaw-aionis-memory
 ```
 
@@ -66,5 +66,5 @@ npm publish --access public
 Install command after publish:
 
 ```bash
-openclaw plugins install openclaw-aionis-memory
+openclaw plugins install @aionis/openclaw
 ```
