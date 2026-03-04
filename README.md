@@ -5,6 +5,17 @@
 [![GitHub release](https://img.shields.io/github/v/release/Cognary/aionis-openclaw-plugin)](https://github.com/Cognary/aionis-openclaw-plugin/releases)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Cognary/aionis-openclaw-plugin/blob/main/LICENSE)
 
+Most agent memory plugins only store chat history.
+
+Aionis goes further.
+
+It turns memory into an execution loop:
+
+`Memory -> Policy -> Action -> Replay`
+
+Your agent does not just remember.
+It learns how to act better over time.
+
 Aionis is production memory infrastructure for agents.
 
 This plugin brings Aionis into OpenClaw/Clawbot and turns memory into an executable loop:
