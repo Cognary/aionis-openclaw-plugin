@@ -1,0 +1,94 @@
+{
+  "id": "openclaw-aionis-memory",
+  "kind": "memory",
+  "uiHints": {
+    "baseUrl": {
+      "label": "Aionis Base URL",
+      "help": "Example: http://127.0.0.1:3001 (local standalone)"
+    },
+    "apiKey": {
+      "label": "Aionis API Key",
+      "sensitive": true,
+      "help": "Memory API key for /v1/memory/* endpoints"
+    },
+    "tenantId": {
+      "label": "Tenant ID",
+      "help": "Default tenant_id sent to Aionis"
+    },
+    "scope": {
+      "label": "Default Scope",
+      "help": "Used when scopeMode=fixed, or fallback when session/project key is unavailable"
+    },
+    "scopePrefix": {
+      "label": "Scope Prefix",
+      "help": "Used with session/project scope modes"
+    },
+    "scopeMode": {
+      "label": "Scope Mode",
+      "help": "fixed = one scope; session = per session; project = per workspace/repo (recommended)"
+    },
+    "preset": {
+      "label": "Preset",
+      "help": "compact (default), policy-first, or custom"
+    },
+    "autoRecall": {
+      "label": "Auto Recall",
+      "help": "Inject Aionis context before agent turn"
+    },
+    "autoCapture": {
+      "label": "Auto Capture",
+      "help": "Write dialogue summary to Aionis after successful turn"
+    },
+    "autoPolicyFeedback": {
+      "label": "Auto Policy Feedback",
+      "help": "Send tools/feedback after successful turn and log policy update signals"
+    },
+    "includeShadow": {
+      "label": "Include Shadow Rules",
+      "advanced": true
+    },
+    "strictTools": {
+      "label": "Strict Tool Selection",
+      "advanced": true
+    },
+    "recallLimit": {
+      "label": "Recall Limit",
+      "advanced": true
+    },
+    "contextCharBudget": {
+      "label": "Context Char Budget",
+      "advanced": true
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "baseUrl": { "type": "string" },
+      "apiKey": { "type": "string" },
+      "tenantId": { "type": "string" },
+      "scope": { "type": "string" },
+      "scopePrefix": { "type": "string" },
+      "scopeMode": {
+        "type": "string",
+        "enum": ["fixed", "session", "project"]
+      },
+      "userId": { "type": "string" },
+      "actor": { "type": "string" },
+      "preset": {
+        "type": "string",
+        "enum": ["compact", "policy-first", "custom"]
+      },
+      "autoRecall": { "type": "boolean" },
+      "autoCapture": { "type": "boolean" },
+      "autoPolicyFeedback": { "type": "boolean" },
+      "includeShadow": { "type": "boolean" },
+      "strictTools": { "type": "boolean" },
+      "recallLimit": { "type": "number" },
+      "captureMessageLimit": { "type": "number" },
+      "contextCharBudget": { "type": "number" },
+      "debug": { "type": "boolean" }
+    },
+    "required": []
+  }
+}

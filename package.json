@@ -1,0 +1,49 @@
+{
+  "name": "openclaw-aionis-memory",
+  "version": "0.1.1",
+  "description": "OpenClaw memory plugin powered by Aionis standalone or hosted API",
+  "type": "module",
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "openclaw.plugin.json",
+    "README.md",
+    ".env.example",
+    "bootstrap-local-standalone.sh"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist artifacts/*.tgz",
+    "prepack": "npm run -s typecheck && npm run -s build",
+    "release:preflight": "./scripts/release-preflight.sh",
+    "release:tgz": "./scripts/build-tgz.sh"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.22",
+    "undici": "^7.16.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.2"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Cognary/openclaw-aionis-memory.git"
+  },
+  "keywords": [
+    "openclaw",
+    "aionis",
+    "memory",
+    "agent",
+    "plugin"
+  ],
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  }
+}
