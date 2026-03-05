@@ -253,6 +253,34 @@ html[data-theme=light] .ambientNebula {
   opacity: 0.85;
 }
 
+.releasePill {
+  margin: 0 auto 20px;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--surface-card-strong);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 7px 12px;
+}
+
+.releasePill a {
+  color: var(--text-primary);
+}
+
+.releasePill a:hover {
+  color: var(--coral-bright);
+}
+
+.releasePill i {
+  font-style: normal;
+  color: var(--text-muted);
+}
+
 h1,
 h2,
 h3,
@@ -974,6 +1002,13 @@ tbody tr:last-child td {
   line-height: 1.7;
 }
 
+.installVersion {
+  margin-left: 8px;
+  color: var(--coral-bright);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
 .useGrid {
   margin-top: 16px;
   display: flex;
@@ -1202,6 +1237,12 @@ tbody tr:last-child td {
     flex-direction: column;
     gap: 4px;
     align-items: flex-start;
+  }
+
+  .installVersion {
+    margin-left: 0;
+    display: block;
+    margin-top: 8px;
   }
 
 

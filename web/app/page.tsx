@@ -43,6 +43,9 @@ const benchmarkCi = [
   { label: "Replay stability", point: 98, lo: 93.0, hi: 99.4 },
 ];
 
+const latestReleaseTag = "v0.1.3";
+const latestNpmVersion = "0.1.3";
+
 export default function HomePage() {
   return (
     <>
@@ -64,6 +67,13 @@ export default function HomePage() {
           </Reveal>
           <Reveal delay={0.04}>
             <p className="eyebrow">Aionis turns agent execution into reusable workflows.</p>
+          </Reveal>
+          <Reveal delay={0.06}>
+            <p className="releasePill">
+              Latest release: <a href="https://github.com/Cognary/aionis-openclaw-plugin/releases/tag/v0.1.3" target="_blank" rel="noreferrer">{latestReleaseTag}</a>
+              <i>·</i>
+              NPM: <a href="https://www.npmjs.com/package/@aionis/openclaw" target="_blank" rel="noreferrer">{latestNpmVersion}</a>
+            </p>
           </Reveal>
           <Reveal delay={0.08}>
             <p className="heroBody">
@@ -294,7 +304,10 @@ replay2_vs_replay1: -123.31ms (-47.4%)`}</pre>
             <h2><span className="clawAccent">⟩</span> Install in 30 seconds</h2>
           </Reveal>
           <Reveal delay={0.04}>
-            <p className="sectionBody">Install the OpenClaw plugin and give your agent replayable execution memory.</p>
+            <p className="sectionBody">
+              Install the OpenClaw plugin and give your agent replayable execution memory.
+              <span className="installVersion">Latest stable: {latestReleaseTag}</span>
+            </p>
           </Reveal>
           <Reveal delay={0.08} variant="scale">
             <div className="installCard">
@@ -304,7 +317,7 @@ replay2_vs_replay1: -123.31ms (-47.4%)`}</pre>
                 <span className="dot" />
                 <strong>Terminal</strong>
               </div>
-              <pre>{`openclaw plugins install @aionis/openclaw
+              <pre>{`openclaw plugins install @aionis/openclaw@0.1.3
 openclaw aionis-memory bootstrap
 openclaw aionis-memory selfcheck`}</pre>
             </div>
