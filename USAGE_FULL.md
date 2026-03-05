@@ -1,6 +1,6 @@
-# Aionis Clawbot Plugin - Full Usage Flow
+# Aionis OpenClaw Plugin - Full Usage Flow
 
-This guide is for end users who want local-first setup with one-click style commands.
+This guide is for end users who want a local-first setup with simple command-line steps.
 
 ## 1. Prerequisites
 
@@ -18,6 +18,8 @@ openclaw plugins install @aionis/openclaw
 ```bash
 openclaw aionis-memory bootstrap
 ```
+
+`bootstrap` defaults to `ghcr.io/cognary/aionis:standalone-v0.2.7` (override with `AIONIS_IMAGE` if needed).
 
 If port `3001` is occupied, set an explicit port:
 
@@ -40,6 +42,8 @@ Restart your OpenClaw/Clawbot process so the plugin reloads with new config.
 ```bash
 openclaw aionis-memory selfcheck --scope clawbot:selfcheck
 openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode simulate
+openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode strict --backend local_process
+openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode guided --backend sandbox_sync --project-id clawbot-demo
 ```
 
 Expected output contains:
@@ -49,6 +53,8 @@ Expected output contains:
   "overall_status": "pass"
 }
 ```
+
+For strict/guided modes, also check `replay_status` in output to confirm execution replay result.
 
 `replay-selfcheck` validates:
 
@@ -79,7 +85,9 @@ Default scope mode can be:
 - `404 Route ... not found`:
   - check `baseUrl` and Aionis version
 - `replay-selfcheck` fails on strict/guided:
-  - Aionis replay strict/guided requires local executor policy and allowlisted command tools
+  - Aionis replay strict/guided requires `allow_local_exec=true` and allowlisted command tools
+  - `replay-selfcheck` auto-enables `allow_local_exec=true` for strict/guided modes
+  - for sandbox backends, set `--project-id` and make sure sandbox budget/policy exists in Aionis
   - use `--mode simulate` first to validate API path
 - `500 internal_error`:
   - avoid running multiple standalone containers with the same data volume

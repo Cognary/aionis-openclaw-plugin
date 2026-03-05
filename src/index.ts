@@ -63,6 +63,11 @@ type ToolDecision = {
 
 type ReplayRunMode = "strict" | "guided" | "simulate";
 type ReplaySafetyLevel = "auto_ok" | "needs_confirm" | "manual_only";
+type ReplayExecutionBackend = "local_process" | "sandbox_sync" | "sandbox_async";
+type ReplaySensitiveReviewMode = "block" | "warn";
+type ReplayGuidedRepairStrategy = "deterministic_skip" | "heuristic_patch" | "http_synth" | "builtin_llm";
+type ReplayShadowValidationProfile = "fast" | "balanced" | "thorough";
+type ReplayShadowValidationExecutionMode = "sync" | "async_queue";
 
 const ConfigSchema = z.object({
   baseUrl: z.string().url().default(process.env.AIONIS_BASE_URL ?? "http://127.0.0.1:3001"),
@@ -704,8 +709,20 @@ class AionisClient {
     autoPromoteOnPass?: boolean;
     autoPromoteTargetStatus?: "draft" | "shadow" | "active" | "disabled";
     autoPromoteGate?: Record<string, unknown>;
+    shadowValidationProfile?: ReplayShadowValidationProfile;
+    shadowValidationExecutionMode?: ReplayShadowValidationExecutionMode;
+    shadowValidationTimeoutMs?: number;
+    shadowValidationStopOnFailure?: boolean;
     metadata?: Record<string, unknown>;
   }): Promise<any> {
+    const mergedShadowValidationParams: Record<string, unknown> = {
+      ...(args.shadowValidationParams ?? {}),
+    };
+    if (args.shadowValidationProfile) mergedShadowValidationParams.profile = args.shadowValidationProfile;
+    if (args.shadowValidationExecutionMode) mergedShadowValidationParams.execution_mode = args.shadowValidationExecutionMode;
+    if (Number.isFinite(args.shadowValidationTimeoutMs)) mergedShadowValidationParams.timeout_ms = args.shadowValidationTimeoutMs;
+    if (typeof args.shadowValidationStopOnFailure === "boolean") mergedShadowValidationParams.stop_on_failure = args.shadowValidationStopOnFailure;
+
     return this.post("/v1/memory/replay/playbooks/repair/review", {
       tenant_id: this.cfg.tenantId,
       scope: args.scope,
@@ -717,7 +734,7 @@ class AionisClient {
       ...(typeof args.autoShadowValidate === "boolean" ? { auto_shadow_validate: args.autoShadowValidate } : {}),
       ...(args.shadowValidationMode ? { shadow_validation_mode: args.shadowValidationMode } : {}),
       ...(Number.isFinite(args.shadowValidationMaxSteps) ? { shadow_validation_max_steps: args.shadowValidationMaxSteps } : {}),
-      ...(args.shadowValidationParams ? { shadow_validation_params: args.shadowValidationParams } : {}),
+      ...(Object.keys(mergedShadowValidationParams).length > 0 ? { shadow_validation_params: mergedShadowValidationParams } : {}),
       ...(args.targetStatusOnApprove ? { target_status_on_approve: args.targetStatusOnApprove } : {}),
       ...(typeof args.autoPromoteOnPass === "boolean" ? { auto_promote_on_pass: args.autoPromoteOnPass } : {}),
       ...(args.autoPromoteTargetStatus ? { auto_promote_target_status: args.autoPromoteTargetStatus } : {}),
@@ -731,9 +748,29 @@ class AionisClient {
     playbookId: string;
     mode: ReplayRunMode;
     version?: number;
+    projectId?: string;
+    executionBackend?: ReplayExecutionBackend;
+    sensitiveReviewMode?: ReplaySensitiveReviewMode;
+    allowSensitiveExec?: boolean;
+    allowLocalExec?: boolean;
+    guidedRepairStrategy?: ReplayGuidedRepairStrategy;
+    commandAliasMap?: Record<string, unknown>;
+    guidedRepairMaxErrorChars?: number;
     params?: Record<string, unknown>;
     maxSteps?: number;
   }): Promise<any> {
+    const mergedParams: Record<string, unknown> = {
+      ...(args.params ?? {}),
+    };
+    if (args.projectId) mergedParams.project_id = args.projectId;
+    if (args.executionBackend) mergedParams.execution_backend = args.executionBackend;
+    if (args.sensitiveReviewMode) mergedParams.sensitive_review_mode = args.sensitiveReviewMode;
+    if (typeof args.allowSensitiveExec === "boolean") mergedParams.allow_sensitive_exec = args.allowSensitiveExec;
+    if (typeof args.allowLocalExec === "boolean") mergedParams.allow_local_exec = args.allowLocalExec;
+    if (args.guidedRepairStrategy) mergedParams.guided_repair_strategy = args.guidedRepairStrategy;
+    if (args.commandAliasMap) mergedParams.command_alias_map = args.commandAliasMap;
+    if (Number.isFinite(args.guidedRepairMaxErrorChars)) mergedParams.guided_repair_max_error_chars = args.guidedRepairMaxErrorChars;
+
     return this.post("/v1/memory/replay/playbooks/run", {
       tenant_id: this.cfg.tenantId,
       scope: args.scope,
@@ -741,7 +778,8 @@ class AionisClient {
       playbook_id: args.playbookId,
       mode: args.mode,
       ...(Number.isFinite(args.version) ? { version: args.version } : {}),
-      ...(args.params ? { params: args.params } : {}),
+      ...(args.projectId ? { project_id: args.projectId } : {}),
+      ...(Object.keys(mergedParams).length > 0 ? { params: mergedParams } : {}),
       ...(Number.isFinite(args.maxSteps) ? { max_steps: args.maxSteps } : {}),
     });
   }
@@ -1380,6 +1418,10 @@ const plugin = {
           autoShadowValidate: Type.Optional(Type.Boolean()),
           shadowValidationMode: Type.Optional(Type.Union([Type.Literal("readiness"), Type.Literal("execute"), Type.Literal("execute_sandbox")])),
           shadowValidationMaxSteps: Type.Optional(Type.Number({ minimum: 1, maximum: 500 })),
+          shadowValidationProfile: Type.Optional(Type.Union([Type.Literal("fast"), Type.Literal("balanced"), Type.Literal("thorough")])),
+          shadowValidationExecutionMode: Type.Optional(Type.Union([Type.Literal("sync"), Type.Literal("async_queue")])),
+          shadowValidationTimeoutMs: Type.Optional(Type.Number({ minimum: 1, maximum: 600000 })),
+          shadowValidationStopOnFailure: Type.Optional(Type.Boolean()),
           shadowValidationParams: Type.Optional(Type.Any()),
           targetStatusOnApprove: Type.Optional(Type.Union([Type.Literal("draft"), Type.Literal("shadow"), Type.Literal("active"), Type.Literal("disabled")])),
           autoPromoteOnPass: Type.Optional(Type.Boolean()),
@@ -1399,6 +1441,14 @@ const plugin = {
             const shadowValidationMode = modeRaw === "readiness" || modeRaw === "execute" || modeRaw === "execute_sandbox"
               ? modeRaw
               : undefined;
+            const profileRaw = String(p.shadowValidationProfile ?? "");
+            const shadowValidationProfile = profileRaw === "fast" || profileRaw === "balanced" || profileRaw === "thorough"
+              ? profileRaw
+              : undefined;
+            const execModeRaw = String(p.shadowValidationExecutionMode ?? "");
+            const shadowValidationExecutionMode = execModeRaw === "sync" || execModeRaw === "async_queue"
+              ? execModeRaw
+              : undefined;
             const targetRaw = String(p.targetStatusOnApprove ?? "");
             const targetStatusOnApprove = targetRaw === "draft" || targetRaw === "shadow" || targetRaw === "active" || targetRaw === "disabled"
               ? targetRaw
@@ -1417,6 +1467,10 @@ const plugin = {
               autoShadowValidate: typeof p.autoShadowValidate === "boolean" ? p.autoShadowValidate : undefined,
               shadowValidationMode,
               shadowValidationMaxSteps: Number.isInteger(p.shadowValidationMaxSteps as number) ? Number(p.shadowValidationMaxSteps) : undefined,
+              shadowValidationProfile,
+              shadowValidationExecutionMode,
+              shadowValidationTimeoutMs: Number.isInteger(p.shadowValidationTimeoutMs as number) ? Number(p.shadowValidationTimeoutMs) : undefined,
+              shadowValidationStopOnFailure: typeof p.shadowValidationStopOnFailure === "boolean" ? p.shadowValidationStopOnFailure : undefined,
               shadowValidationParams: p.shadowValidationParams && typeof p.shadowValidationParams === "object" && !Array.isArray(p.shadowValidationParams)
                 ? (p.shadowValidationParams as Record<string, unknown>)
                 : undefined,
@@ -1448,6 +1502,14 @@ const plugin = {
           playbookId: Type.String({ minLength: 1 }),
           mode: Type.Optional(Type.Union([Type.Literal("simulate"), Type.Literal("strict"), Type.Literal("guided")])),
           version: Type.Optional(Type.Number({ minimum: 1 })),
+          projectId: Type.Optional(Type.String({ minLength: 1, maxLength: 128 })),
+          executionBackend: Type.Optional(Type.Union([Type.Literal("local_process"), Type.Literal("sandbox_sync"), Type.Literal("sandbox_async")])),
+          sensitiveReviewMode: Type.Optional(Type.Union([Type.Literal("block"), Type.Literal("warn")])),
+          allowSensitiveExec: Type.Optional(Type.Boolean()),
+          allowLocalExec: Type.Optional(Type.Boolean()),
+          guidedRepairStrategy: Type.Optional(Type.Union([Type.Literal("deterministic_skip"), Type.Literal("heuristic_patch"), Type.Literal("http_synth"), Type.Literal("builtin_llm")])),
+          commandAliasMap: Type.Optional(Type.Any()),
+          guidedRepairMaxErrorChars: Type.Optional(Type.Number({ minimum: 1, maximum: 20000 })),
           params: Type.Optional(Type.Any()),
           maxSteps: Type.Optional(Type.Number({ minimum: 1, maximum: 500 })),
           scope: Type.Optional(Type.String()),
@@ -1459,12 +1521,36 @@ const plugin = {
             if (!playbookId) return toToolText("playbookId is required", { ok: false });
             const modeRaw = String(p.mode ?? "simulate");
             const mode: ReplayRunMode = modeRaw === "strict" || modeRaw === "guided" || modeRaw === "simulate" ? modeRaw : "simulate";
+            const backendRaw = String(p.executionBackend ?? "");
+            const executionBackend: ReplayExecutionBackend | undefined = backendRaw === "local_process" || backendRaw === "sandbox_sync" || backendRaw === "sandbox_async"
+              ? backendRaw
+              : undefined;
+            const sensitiveReviewRaw = String(p.sensitiveReviewMode ?? "");
+            const sensitiveReviewMode: ReplaySensitiveReviewMode | undefined = sensitiveReviewRaw === "block" || sensitiveReviewRaw === "warn"
+              ? sensitiveReviewRaw
+              : undefined;
+            const strategyRaw = String(p.guidedRepairStrategy ?? "");
+            const guidedRepairStrategy: ReplayGuidedRepairStrategy | undefined =
+              strategyRaw === "deterministic_skip" || strategyRaw === "heuristic_patch" || strategyRaw === "http_synth" || strategyRaw === "builtin_llm"
+                ? strategyRaw
+                : undefined;
+            const projectId = typeof p.projectId === "string" && p.projectId.trim() ? p.projectId.trim() : undefined;
             const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
             const out = await client.replayPlaybookRun({
               scope,
               playbookId,
               mode,
               version: Number.isInteger(p.version as number) ? Number(p.version) : undefined,
+              projectId,
+              executionBackend,
+              sensitiveReviewMode,
+              allowSensitiveExec: typeof p.allowSensitiveExec === "boolean" ? p.allowSensitiveExec : undefined,
+              allowLocalExec: typeof p.allowLocalExec === "boolean" ? p.allowLocalExec : undefined,
+              guidedRepairStrategy,
+              commandAliasMap: p.commandAliasMap && typeof p.commandAliasMap === "object" && !Array.isArray(p.commandAliasMap)
+                ? (p.commandAliasMap as Record<string, unknown>)
+                : undefined,
+              guidedRepairMaxErrorChars: Number.isInteger(p.guidedRepairMaxErrorChars as number) ? Number(p.guidedRepairMaxErrorChars) : undefined,
               params: p.params && typeof p.params === "object" && !Array.isArray(p.params)
                 ? (p.params as Record<string, unknown>)
                 : undefined,
@@ -1605,15 +1691,36 @@ const plugin = {
 
           root
             .command("replay-selfcheck")
-            .description("Run replay record -> compile -> simulate path check")
+            .description("Run replay record -> compile -> replay execution path check")
             .option("--scope <scope>", "scope override")
             .option("--mode <mode>", "simulate|strict|guided", "simulate")
-            .action(async (opts: { scope?: string; mode?: string }) => {
+            .option("--backend <backend>", "local_process|sandbox_sync|sandbox_async", "local_process")
+            .option("--project-id <projectId>", "project id for sandbox budget scoping")
+            .option("--allow-sensitive-exec", "allow sensitive command execution", false)
+            .option("--allow-local-exec", "explicitly set allow_local_exec=true")
+            .option("--sensitive-review-mode <mode>", "block|warn", "block")
+            .action(async (opts: {
+              scope?: string;
+              mode?: string;
+              backend?: string;
+              projectId?: string;
+              allowSensitiveExec?: boolean;
+              allowLocalExec?: boolean;
+              sensitiveReviewMode?: string;
+            }) => {
               const scope = opts.scope?.trim() || resolved.scope;
               const requestedMode = String(opts.mode ?? "simulate").trim().toLowerCase();
               const mode: ReplayRunMode = requestedMode === "strict" || requestedMode === "guided" || requestedMode === "simulate"
                 ? (requestedMode as ReplayRunMode)
                 : "simulate";
+              const requestedBackend = String(opts.backend ?? "local_process").trim().toLowerCase();
+              const backend: ReplayExecutionBackend = requestedBackend === "sandbox_sync" || requestedBackend === "sandbox_async" || requestedBackend === "local_process"
+                ? (requestedBackend as ReplayExecutionBackend)
+                : "local_process";
+              const requestedSensitiveReviewMode = String(opts.sensitiveReviewMode ?? "block").trim().toLowerCase();
+              const sensitiveReviewMode: ReplaySensitiveReviewMode = requestedSensitiveReviewMode === "warn" ? "warn" : "block";
+              const projectId = typeof opts.projectId === "string" && opts.projectId.trim() ? opts.projectId.trim() : undefined;
+              const allowLocalExec = opts.allowLocalExec === true ? true : mode !== "simulate";
               const runId = randomUUID();
               try {
                 const started = await client.replayRunStart({
@@ -1627,10 +1734,10 @@ const plugin = {
                   scope,
                   runId: startedRunId,
                   stepIndex: 1,
-                  toolName: "echo",
+                  toolName: "command",
                   toolInput: { argv: ["echo", "aionis replay selfcheck"] },
-                  expectedOutputSignature: { contains: "aionis replay selfcheck" },
-                  preconditions: [{ check: "command_available", command: "echo" }],
+                  expectedOutputSignature: { stdout_contains: "aionis replay selfcheck" },
+                  preconditions: [{ kind: "command_available", command: "echo" }],
                   safetyLevel: "auto_ok",
                   metadata: { source: "openclaw-cli", selfcheck: true },
                 });
@@ -1641,7 +1748,7 @@ const plugin = {
                   stepIndex: 1,
                   status: "success",
                   outputSignature: { contains: "aionis replay selfcheck" },
-                  postconditions: [{ check: "stdout_contains", value: "aionis replay selfcheck" }],
+                  postconditions: [{ kind: "stdout_contains", value: "aionis replay selfcheck" }],
                   metadata: { source: "openclaw-cli", selfcheck: true },
                 });
                 const ended = await client.replayRunEnd({
@@ -1667,10 +1774,27 @@ const plugin = {
                     scope,
                     playbookId,
                     mode,
-                    params: { selfcheck: true },
+                    projectId,
+                    executionBackend: backend,
+                    sensitiveReviewMode,
+                    allowSensitiveExec: opts.allowSensitiveExec === true ? true : undefined,
+                    allowLocalExec,
+                    params: { selfcheck: true, auto_confirm: true, workdir: "." },
                     maxSteps: 20,
                   })
                   : null;
+                const replayStatus = extractReplayRunStatus(replayRun);
+                const replayRunId = extractReplayRunId(replayRun);
+                const replayRunUri = extractReplayRunUri(replayRun);
+                const replayUnexpectedFailure =
+                  mode !== "simulate" && (
+                    replayStatus == null
+                    || replayStatus === "failed"
+                    || (mode === "strict" && replayStatus !== "success")
+                  );
+                if (replayUnexpectedFailure) {
+                  throw new Error(`replay run returned unexpected status for mode=${mode}: ${String(replayStatus ?? "null")}`);
+                }
 
                 console.log(
                   JSON.stringify(
@@ -1678,12 +1802,18 @@ const plugin = {
                       overall_status: "pass",
                       scope,
                       mode,
+                      execution_backend: backend,
+                      sensitive_review_mode: sensitiveReviewMode,
+                      allow_local_exec: allowLocalExec,
+                      project_id: projectId ?? null,
                       run_id: startedRunId,
                       step_id: stepBefore?.step_id ?? null,
                       run_end_status: ended?.status ?? "success",
                       playbook_id: playbookId || null,
-                      replay_status: replayRun?.status ?? replayRun?.run_status ?? replayRun?.result?.status ?? null,
-                      replay_run_id: replayRun?.run_id ?? replayRun?.replay_run_id ?? null,
+                      replay_status: replayStatus,
+                      replay_run_id: replayRunId,
+                      replay_run_uri: replayRunUri,
+                      replay_readiness: replayRun?.summary?.replay_readiness ?? null,
                       step_after_ok: !!stepAfter,
                     },
                     null,
@@ -1697,6 +1827,10 @@ const plugin = {
                       overall_status: "fail",
                       scope,
                       mode,
+                      execution_backend: backend,
+                      sensitive_review_mode: sensitiveReviewMode,
+                      allow_local_exec: allowLocalExec,
+                      project_id: projectId ?? null,
                       run_id: runId,
                       error: formatError(err),
                     },
@@ -1854,6 +1988,46 @@ function inferUsedTool(event: any): string | null {
     }
   }
   return null;
+}
+
+function toNonEmptyString(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const s = v.trim();
+  return s.length > 0 ? s : null;
+}
+
+function extractReplayRunStatus(v: unknown): string | null {
+  const obj = toRecord(v);
+  const run = toRecord(obj.run);
+  const result = toRecord(obj.result);
+  const summary = toRecord(obj.summary);
+  return (
+    toNonEmptyString(run.status)
+    ?? toNonEmptyString(obj.status)
+    ?? toNonEmptyString(obj.run_status)
+    ?? toNonEmptyString(result.status)
+    ?? toNonEmptyString(summary.replay_readiness)
+    ?? null
+  );
+}
+
+function extractReplayRunId(v: unknown): string | null {
+  const obj = toRecord(v);
+  const run = toRecord(obj.run);
+  const result = toRecord(obj.result);
+  return (
+    toNonEmptyString(run.run_id)
+    ?? toNonEmptyString(obj.run_id)
+    ?? toNonEmptyString(obj.replay_run_id)
+    ?? toNonEmptyString(result.run_id)
+    ?? null
+  );
+}
+
+function extractReplayRunUri(v: unknown): string | null {
+  const obj = toRecord(v);
+  const run = toRecord(obj.run);
+  return toNonEmptyString(run.run_uri) ?? toNonEmptyString(obj.run_uri) ?? null;
 }
 
 function formatError(err: unknown): string {

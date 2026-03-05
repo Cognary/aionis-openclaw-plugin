@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aionis for OpenClaw | Execution Memory for Agents</title>
+    <meta
+      name="description"
+      content="Teach your agent once. Let it replay forever. Aionis records execution traces, compiles playbooks, and replays with policy governance."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #f9fafb;
+        --panel: #ffffff;
+        --ink: #0f172a;
+        --muted: #475569;
+        --line: #dbe1ea;
+        --blue: #1d4ed8;
+        --blue-soft: #eff6ff;
+        --code-bg: #0b1220;
+        --code-ink: #dbeafe;
+        --radius: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Inter", "Avenir Next", "Segoe UI", sans-serif;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .container {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      .top {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        backdrop-filter: blur(8px);
+        background: rgba(249, 250, 251, 0.85);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .top .inner {
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .logo {
+        font-family: "Geist", "Inter", sans-serif;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+        font-size: 15px;
+      }
+
+      .logo span {
+        color: var(--blue);
+      }
+
+      .nav {
+        display: flex;
+        gap: 14px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      section {
+        padding: 40px 0;
+      }
+
+      .hero {
+        padding-top: 56px;
+      }
+
+      .kicker {
+        display: inline-block;
+        padding: 6px 10px;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        background: var(--blue-soft);
+        color: #1e40af;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      h1 {
+        margin: 14px 0 10px;
+        font-family: "Geist", "Inter", sans-serif;
+        font-size: clamp(34px, 5.8vw, 64px);
+        line-height: 0.95;
+        letter-spacing: -0.03em;
+      }
+
+      .sub {
+        margin: 0;
+        max-width: 660px;
+        color: var(--muted);
+        font-size: clamp(16px, 2.2vw, 20px);
+        line-height: 1.5;
+      }
+
+      .flow {
+        margin-top: 16px;
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 13px;
+        color: #1e3a8a;
+      }
+
+      .row {
+        margin-top: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 600;
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+
+      .btn.primary {
+        background: var(--blue);
+        color: #fff;
+        border-color: var(--blue);
+      }
+
+      h2 {
+        margin: 0;
+        font-size: clamp(24px, 3.6vw, 36px);
+        letter-spacing: -0.02em;
+      }
+
+      .muted {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      .card {
+        margin-top: 16px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 16px;
+      }
+
+      .terminal {
+        background: var(--code-bg);
+        color: var(--code-ink);
+        border: 1px solid #1e293b;
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .terminal .head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 12px;
+        border-bottom: 1px solid #1e293b;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #334155;
+      }
+
+      .terminal pre {
+        margin: 0;
+        padding: 14px;
+        white-space: pre-wrap;
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .demo-lines span {
+        display: block;
+        opacity: 0;
+        animation: reveal 0.8s ease forwards;
+      }
+
+      .demo-lines span:nth-child(1) {
+        animation-delay: 0.15s;
+      }
+
+      .demo-lines span:nth-child(2) {
+        animation-delay: 0.45s;
+      }
+
+      .demo-lines span:nth-child(3) {
+        animation-delay: 0.75s;
+      }
+
+      .demo-lines span:nth-child(4) {
+        animation-delay: 1.05s;
+      }
+
+      .demo-lines span:nth-child(5) {
+        animation-delay: 1.35s;
+      }
+
+      @keyframes reveal {
+        from {
+          opacity: 0;
+          transform: translateY(3px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .stack {
+        margin-top: 14px;
+        padding: 14px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        background: #fff;
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.7;
+      }
+
+      .features {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .feature h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .feature p {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      .table-wrap {
+        margin-top: 16px;
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 580px;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 14px;
+      }
+
+      th {
+        background: #f8fafc;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .ok {
+        color: #166534;
+        font-weight: 700;
+      }
+
+      .no {
+        color: #991b1b;
+        font-weight: 700;
+      }
+
+      .usecases {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .pill {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: #fff;
+      }
+
+      .arch {
+        margin-top: 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        padding: 16px;
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.7;
+      }
+
+      details {
+        margin-top: 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        padding: 10px 12px;
+      }
+
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      details p {
+        color: var(--muted);
+        margin: 8px 0 0;
+      }
+
+      footer {
+        margin: 26px 0 56px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      footer nav {
+        display: flex;
+        gap: 14px;
+      }
+
+      @media (max-width: 760px) {
+        .nav {
+          display: none;
+        }
+
+        .features,
+        .usecases {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .demo-lines span {
+          animation: none;
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="container inner">
+        <div class="logo">Aionis <span>OpenClaw</span> Plugin</div>
+        <nav class="nav">
+          <a href="#demo">Demo</a>
+          <a href="#features">Features</a>
+          <a href="#comparison">Comparison</a>
+          <a href="#install">Install</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <span class="kicker">Execution Memory for Agents</span>
+        <h1>Teach your agent once. Let it replay forever.</h1>
+        <p class="sub">
+          Aionis records agent execution, compiles playbooks, and replays them with policy governance.
+        </p>
+        <p class="flow">Memory -> Policy -> Action -> Replay</p>
+        <div class="row">
+          <a class="btn primary" href="https://www.npmjs.com/package/@aionis/openclaw" target="_blank" rel="noreferrer">Install Plugin</a>
+          <a class="btn" href="https://github.com/Cognary/aionis-openclaw-plugin" target="_blank" rel="noreferrer">GitHub</a>
+          <a class="btn" href="https://github.com/Cognary/aionis-openclaw-plugin/blob/main/README.md" target="_blank" rel="noreferrer">Docs</a>
+        </div>
+      </section>
+
+      <section id="demo">
+        <h2>Watch an agent learn a workflow</h2>
+        <div class="card terminal">
+          <div class="head"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <pre class="demo-lines"><span>$ openclaw plugins install @aionis/openclaw</span><span>... execution trace recorded</span><span>... replay playbook compiled</span><span>... next run replayed with policy checks</span><span>overall_status: pass</span></pre>
+        </div>
+      </section>
+
+      <section id="what">
+        <h2>What Aionis Actually Does</h2>
+        <p class="muted">Most memory plugins only store conversations. Aionis stores execution.</p>
+        <div class="stack">run
+↓
+trace
+↓
+compile
+↓
+replay
+↓
+repair
+↓
+promote</div>
+        <p class="muted"><strong>Agents stop repeating mistakes.</strong></p>
+      </section>
+
+      <section id="features">
+        <h2>Core Features</h2>
+        <div class="features">
+          <article class="card feature">
+            <h3>Replayable Execution</h3>
+            <p>Record agent runs and replay them as deterministic playbooks.</p>
+          </article>
+          <article class="card feature">
+            <h3>Policy Loop</h3>
+            <p>Memory can influence tool routing and action decisions.</p>
+          </article>
+          <article class="card feature">
+            <h3>Layered Context</h3>
+            <p><code>facts / episodes / rules / tools / citations</code></p>
+          </article>
+          <article class="card feature">
+            <h3>Repair & Promotion</h3>
+            <p>Failed playbooks can be repaired and promoted after validation.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="comparison">
+        <h2>Memory plugins vs Aionis</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>mem0</th>
+                <th>supermemory</th>
+                <th>Aionis</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Chat memory</td>
+                <td class="ok">✔</td>
+                <td class="ok">✔</td>
+                <td class="ok">✔</td>
+              </tr>
+              <tr>
+                <td>Vector recall</td>
+                <td class="ok">✔</td>
+                <td class="ok">✔</td>
+                <td class="ok">✔</td>
+              </tr>
+              <tr>
+                <td>Execution trace</td>
+                <td class="no">✘</td>
+                <td class="no">✘</td>
+                <td class="ok">✔</td>
+              </tr>
+              <tr>
+                <td>Replay workflows</td>
+                <td class="no">✘</td>
+                <td class="no">✘</td>
+                <td class="ok">✔</td>
+              </tr>
+              <tr>
+                <td>Policy loop</td>
+                <td class="no">✘</td>
+                <td class="no">✘</td>
+                <td class="ok">✔</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted"><strong>Aionis turns memory into automation.</strong></p>
+      </section>
+
+      <section id="install">
+        <h2>Install in 30 seconds</h2>
+        <div class="card terminal">
+          <div class="head"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <pre>openclaw plugins install @aionis/openclaw
+openclaw aionis-memory bootstrap
+openclaw aionis-memory selfcheck</pre>
+        </div>
+        <p class="muted">Expected output: <code>overall_status: pass</code>, <code>replay_status: pass</code>.</p>
+      </section>
+
+      <section id="usecases">
+        <h2>What people use this for</h2>
+        <div class="usecases">
+          <div class="pill">install dev environments</div>
+          <div class="pill">deploy docker stacks</div>
+          <div class="pill">setup coding agents</div>
+          <div class="pill">automate research workflows</div>
+        </div>
+        <p class="muted"><strong>If an agent can do it once, it can replay it.</strong></p>
+      </section>
+
+      <section id="architecture">
+        <h2>Architecture</h2>
+        <div class="arch">LLM
+↓
+Agent planner
+↓
+Aionis
+↓
+Tools / environment</div>
+        <p class="muted">Aionis provides persistent execution memory for agents.</p>
+      </section>
+
+      <section id="faq">
+        <h2>FAQ</h2>
+        <details>
+          <summary>Is this just RAG memory?</summary>
+          <p>No. Aionis records execution traces and replays them as workflows.</p>
+        </details>
+        <details>
+          <summary>Does it require cloud?</summary>
+          <p>No. Standalone local mode is supported.</p>
+        </details>
+        <details>
+          <summary>What agents does it work with?</summary>
+          <p>OpenClaw / Clawbot today. Other agents can integrate via API.</p>
+        </details>
+      </section>
+
+      <footer>
+        <div>© Aionis OpenClaw Plugin</div>
+        <nav>
+          <a href="https://github.com/Cognary/aionis-openclaw-plugin" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://github.com/Cognary/aionis-openclaw-plugin/blob/main/README.md" target="_blank" rel="noreferrer">Docs</a>
+          <a href="https://www.npmjs.com/package/@aionis/openclaw" target="_blank" rel="noreferrer">NPM</a>
+        </nav>
+      </footer>
+    </main>
+  </body>
+</html>

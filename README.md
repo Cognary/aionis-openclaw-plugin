@@ -18,7 +18,7 @@ It learns how to act better over time.
 
 Aionis is production memory infrastructure for agents.
 
-This plugin brings Aionis into OpenClaw/Clawbot and turns memory into an executable loop:
+This plugin brings Aionis into OpenClaw (including Clawbot) and turns memory into an executable loop:
 
 `Memory -> Policy -> Action -> Replay`
 
@@ -75,10 +75,12 @@ openclaw aionis-memory bootstrap && \
 openclaw aionis-memory selfcheck --scope clawbot:selfcheck
 ```
 
-Replay path selfcheck:
+Replay path selfcheck (all modes):
 
 ```bash
 openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode simulate
+openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode strict --backend local_process
+openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode guided --backend sandbox_sync --project-id clawbot-demo
 ```
 
 ## Project isolation in Clawbot
@@ -112,6 +114,8 @@ Other modes:
 ./bootstrap-local-standalone.sh
 ```
 
+Default image: `ghcr.io/cognary/aionis:standalone-v0.2.7`.
+
 If `3001` is occupied, the script auto-falls back to `3002-3010`.
 You can also force a port:
 
@@ -136,11 +140,13 @@ openclaw plugins install @aionis/openclaw
 openclaw aionis-memory bootstrap
 ```
 
-4. Verify end-to-end path:
+4. Verify end-to-end path (recommended sequence):
 
 ```bash
 openclaw aionis-memory selfcheck --scope clawbot:selfcheck
 openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode simulate
+openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode strict --backend local_process
+openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode guided --backend sandbox_sync --project-id clawbot-demo
 ```
 
 ## Configuration
@@ -172,6 +178,7 @@ openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode simulat
 
 - `404 Route ... not found`: verify Aionis version and `baseUrl`
 - `400 invalid_request`: verify payload and required fields
+- `strict/guided replay run failed`: check sandbox settings (`SANDBOX_ENABLED=true`, local executor policy, command allowlist), and verify `allow_local_exec` (plugin selfcheck auto-enables for strict/guided)
 - Policy feedback logs include: `policy switch reduced` or `policy switch detected`, and `rule confidence updated (updated_rules=...)`
 
 ## License

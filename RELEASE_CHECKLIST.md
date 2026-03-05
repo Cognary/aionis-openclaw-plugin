@@ -31,6 +31,14 @@ openclaw plugins info openclaw-aionis-memory
 openclaw aionis-memory bootstrap
 ```
 
+Optional but recommended replay path check:
+
+```bash
+openclaw aionis-memory replay-selfcheck --scope clawbot:release-check --mode simulate
+openclaw aionis-memory replay-selfcheck --scope clawbot:release-check --mode strict --backend local_process
+openclaw aionis-memory replay-selfcheck --scope clawbot:release-check --mode guided --backend sandbox_sync --project-id clawbot-release
+```
+
 If you still need manual JSON, use:
 
 ```json
@@ -59,7 +67,9 @@ If you still need manual JSON, use:
 ## 5. Publish to npm
 
 ```bash
-npm version patch
+# Choose one versioning strategy:
+# - exact version: npm version <x.y.z> --no-git-tag-version
+# - semver bump:   npm version patch|minor|major --no-git-tag-version
 npm publish --access public
 ```
 
