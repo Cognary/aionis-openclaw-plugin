@@ -36,27 +36,14 @@ export default function HomePage() {
       <div className="ambientStars" aria-hidden />
       <div className="ambientNebula" aria-hidden />
 
-      <header className="topbar">
-        <div className="shell topbarInner">
-          <a className="logo" href="#top">
-            Aionis
-          </a>
-          <nav className="topnav">
-            <a href="#demo">Demo</a>
-            <a href="#capabilities">Capabilities</a>
-            <a href="#comparison">Comparison</a>
-            <a href="#install">Install</a>
-            <a href="#faq">FAQ</a>
-          </nav>
-        </div>
-      </header>
+
 
       <main id="top" className="shell">
         {/* ── Hero ── */}
         <section className="hero">
           <Reveal>
             <div className="heroSigil" aria-hidden>
-              A
+              Aionis
             </div>
           </Reveal>
           <Reveal>
