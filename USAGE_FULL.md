@@ -19,7 +19,7 @@ openclaw plugins install @aionis/openclaw
 openclaw aionis-memory bootstrap
 ```
 
-`bootstrap` defaults to `ghcr.io/cognary/aionis:standalone-v0.2.7` (override with `AIONIS_IMAGE` if needed).
+`bootstrap` defaults to `ghcr.io/cognary/aionis:standalone-v0.2.16` (override with `AIONIS_IMAGE` if needed).
 
 If port `3001` is occupied, set an explicit port:
 

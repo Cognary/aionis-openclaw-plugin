@@ -30,7 +30,7 @@ This plugin brings Aionis into OpenClaw (including Clawbot) and turns memory int
 
 - Replay execution integration expanded for Clawbot workflows and repair-review controls.
 - Replay selfcheck improved with strict/guided mode checks and stronger status gating.
-- Local standalone bootstrap defaults aligned to Aionis `standalone-v0.2.7`.
+- Local standalone bootstrap defaults aligned to Aionis `standalone-v0.2.16`.
 - Public landing page added and deployed on GitHub Pages.
 
 ## Why Aionis
@@ -160,7 +160,7 @@ Other modes:
 ./bootstrap-local-standalone.sh
 ```
 
-Default image: `ghcr.io/cognary/aionis:standalone-v0.2.7`.
+Default image: `ghcr.io/cognary/aionis:standalone-v0.2.16`.
 
 If `3001` is occupied, the script auto-falls back to `3002-3010`.
 You can also force a port:

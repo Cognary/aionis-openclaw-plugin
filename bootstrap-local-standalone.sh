@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE="${AIONIS_IMAGE:-ghcr.io/cognary/aionis:standalone-v0.2.7}"
+IMAGE="${AIONIS_IMAGE:-ghcr.io/cognary/aionis:standalone-v0.2.16}"
 CONTAINER_NAME="${AIONIS_CONTAINER_NAME:-aionis-local}"
 PORT="${AIONIS_PORT:-3001}"
 ENV_DIR="${AIONIS_ENV_DIR:-$HOME/.openclaw/plugins/aionis}"
