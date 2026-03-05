@@ -5,7 +5,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/Cognary/aionis-openclaw-plugin)](https://github.com/Cognary/aionis-openclaw-plugin/releases)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Cognary/aionis-openclaw-plugin/blob/main/LICENSE)
 
-Website: https://cognary.github.io/aionis-openclaw-plugin/  
+Website: https://clawbot.aionisos.com/  
 NPM: https://www.npmjs.com/package/@aionis/openclaw  
 Releases: https://github.com/Cognary/aionis-openclaw-plugin/releases
 
@@ -93,6 +93,41 @@ openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode simulat
 openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode strict --backend local_process
 openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode guided --backend sandbox_sync --project-id clawbot-demo
 ```
+
+## Clawbot user flow (recommended)
+
+1. Install and bootstrap:
+
+```bash
+openclaw plugins install @aionis/openclaw
+openclaw aionis-memory bootstrap
+```
+
+2. Enable plugin slot and defaults:
+
+```bash
+openclaw config set plugins.entries.openclaw-aionis-memory.enabled true
+openclaw config set plugins.slots.memory openclaw-aionis-memory
+openclaw config set plugins.entries.openclaw-aionis-memory.config.scopeMode project
+openclaw config set plugins.entries.openclaw-aionis-memory.config.autoRecall true
+openclaw config set plugins.entries.openclaw-aionis-memory.config.autoCapture true
+openclaw config set plugins.entries.openclaw-aionis-memory.config.autoPolicyFeedback true
+openclaw gateway restart
+```
+
+3. Validate memory + replay path:
+
+```bash
+openclaw aionis-memory selfcheck --scope clawbot:selfcheck
+openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode strict --backend local_process
+```
+
+4. Use in Clawbot chat:
+
+- Normal chat auto-runs `recall -> capture -> policy feedback`.
+- Replay lifecycle can be called with `aionis_replay_*` tools when your agent workflow records/compiles/runs playbooks.
+
+Detailed guide: [USAGE_FULL.md](./USAGE_FULL.md)
 
 ## Project isolation in Clawbot
 
