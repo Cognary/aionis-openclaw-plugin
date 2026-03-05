@@ -1,4 +1,5 @@
 import { Reveal } from "../components/reveal";
+import { BenchmarkTerminal } from "../components/benchmark-terminal";
 import { TerminalDemo } from "../components/terminal-demo";
 
 const capabilities = [
@@ -194,9 +195,12 @@ status: replay_success`}</pre>
               In a 100-case install/config benchmark, Aionis keeps replay reliability high while cutting runtime sharply after compile.
             </p>
           </Reveal>
+          <Reveal delay={0.08} variant="scale">
+            <BenchmarkTerminal />
+          </Reveal>
           <div className="benchmarkGrid">
             {benchmarkKpis.map((item, idx) => (
-              <Reveal key={item.label} delay={0.06 + idx * 0.03} variant="scale">
+              <Reveal key={item.label} delay={0.1 + idx * 0.03} variant="scale">
                 <div className="benchmarkKpi">
                   <p>{item.label}</p>
                   <strong>{item.value}</strong>

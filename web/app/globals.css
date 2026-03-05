@@ -733,6 +733,100 @@ h3 {
   color: var(--text-primary);
 }
 
+.benchTerminal {
+  margin-top: 16px;
+}
+
+.benchChips {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-overlay);
+}
+
+.benchChip {
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--surface-interactive);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  padding: 5px 10px;
+  letter-spacing: 0.01em;
+  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.benchChip[data-state="running"] {
+  color: var(--coral-bright);
+  border-color: var(--border-accent);
+  box-shadow: 0 0 0 3px var(--shadow-coral-soft);
+}
+
+.benchChip[data-state="pass"] {
+  color: var(--cyan-bright);
+  border-color: color-mix(in srgb, var(--cyan-bright) 35%, transparent);
+  background: var(--surface-cyan-soft);
+}
+
+.benchTerminal pre {
+  min-height: 216px;
+}
+
+.terminalLine {
+  display: block;
+}
+
+.lineCommand {
+  color: var(--text-primary);
+}
+
+.lineSuccess {
+  color: var(--cyan-bright);
+}
+
+.lineTyping {
+  color: var(--text-primary);
+}
+
+.typingCursor {
+  margin-left: 1px;
+  font-style: normal;
+  animation: cursorBlink 1s steps(2, start) infinite;
+}
+
+@keyframes cursorBlink {
+
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.benchMeta {
+  border-top: 1px solid var(--border-subtle);
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.benchMeta span {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-interactive);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 4px 9px;
+}
+
 .tableWrap {
   margin-top: 24px;
   border: 1px solid var(--border-subtle);
@@ -1018,6 +1112,10 @@ tbody tr:last-child td {
 
   .benchmarkGrid {
     grid-template-columns: 1fr;
+  }
+
+  .benchTerminal pre {
+    min-height: 248px;
   }
 
 
