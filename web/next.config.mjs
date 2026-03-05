@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
-const isGithubActions = process.env.GITHUB_ACTIONS === "true";
 const repoName = process.env.GITHUB_REPOSITORY?.replace(/^[^/]+\//, "") ?? "";
-const basePath = isGithubActions && repoName ? `/${repoName}` : "";
+const useRepoBasePath = process.env.NEXT_USE_REPO_BASE_PATH === "true";
+const basePath = useRepoBasePath && repoName ? `/${repoName}` : "";
 
 const nextConfig = {
   reactStrictMode: true,
