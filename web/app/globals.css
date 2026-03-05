@@ -491,6 +491,14 @@ h1 {
   padding: 4px 10px;
 }
 
+.heroLatencyNote {
+  margin: 0;
+  padding: 0 16px 14px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
 .section {
   margin-top: 72px;
   animation: fadeInUp 0.8s ease-out;
@@ -723,6 +731,10 @@ h3 {
   color: var(--text-muted);
   line-height: 1.65;
   font-size: 0.86rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
 }
 
 .benchmarkNote a {
@@ -731,6 +743,10 @@ h3 {
 
 .benchmarkNote a:hover {
   color: var(--text-primary);
+}
+
+.benchmarkNoteText {
+  flex: 1 1 100%;
 }
 
 .benchTerminal {
@@ -825,6 +841,70 @@ h3 {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   padding: 4px 9px;
+}
+
+.benchmarkCi {
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 20px;
+  background: var(--surface-overlay);
+}
+
+.benchmarkCi>p {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+}
+
+.benchmarkCiRow+.benchmarkCiRow {
+  margin-top: 10px;
+}
+
+.benchmarkCiLabel {
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.benchmarkCiLabel span {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.benchmarkCiLabel b {
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.benchmarkCiTrack {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-interactive);
+  border: 1px solid var(--border-subtle);
+  position: relative;
+}
+
+.benchmarkCiRange {
+  position: absolute;
+  top: -1px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--coral-mid), var(--coral-bright));
+}
+
+.benchmarkCiPoint {
+  position: absolute;
+  top: -4px;
+  width: 4px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--cyan-bright);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cyan-bright) 20%, transparent);
 }
 
 .tableWrap {
@@ -1116,6 +1196,12 @@ tbody tr:last-child td {
 
   .benchTerminal pre {
     min-height: 248px;
+  }
+
+  .benchmarkCiLabel {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
   }
 
 

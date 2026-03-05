@@ -38,6 +38,11 @@ const benchmarkKpis = [
   { label: "Replay Speedup (R2 vs baseline)", value: "16.51x" },
 ];
 
+const benchmarkCi = [
+  { label: "Compile success", point: 98, lo: 93.0, hi: 99.4 },
+  { label: "Replay stability", point: 98, lo: 93.0, hi: 99.4 },
+];
+
 export default function HomePage() {
   return (
     <>
@@ -67,7 +72,7 @@ export default function HomePage() {
             </p>
           </Reveal>
           <Reveal delay={0.16} className="heroButtons" variant="scale">
-            <a className="btn btnPrimary" href="https://www.npmjs.com/package/@aionis/openclaw" target="_blank" rel="noreferrer">
+            <a className="btn btnPrimary" href="#install">
               Install Plugin
             </a>
             <a className="btn" href="https://github.com/Cognary/aionis-openclaw-plugin" target="_blank" rel="noreferrer">
@@ -109,8 +114,11 @@ status: replay_success`}</pre>
             <div className="codeBadges">
               <span>overall_status: pass</span>
               <span>replay_status: pass</span>
-              <span>latency: 1.2s</span>
+              <span>demo_session_latency: 1.2s</span>
             </div>
+            <p className="heroLatencyNote">
+              Latency note: this is guided end-to-end demo session latency. Benchmark latency below reports replay-step averages (replay2_avg: 136.9ms).
+            </p>
           </div>
         </Reveal>
 
@@ -220,9 +228,29 @@ status: replay_success`}</pre>
 replay1_avg: 260.20ms  (8.69x faster than baseline)
 replay2_avg: 136.90ms  (16.51x faster than baseline)
 replay2_vs_replay1: -123.31ms (-47.4%)`}</pre>
+              <div className="benchmarkCi">
+                <p>95% confidence interval (Wilson)</p>
+                {benchmarkCi.map((item) => (
+                  <div key={item.label} className="benchmarkCiRow">
+                    <div className="benchmarkCiLabel">
+                      <span>{item.label}</span>
+                      <b>{item.point}% · CI {item.lo}% - {item.hi}%</b>
+                    </div>
+                    <div className="benchmarkCiTrack">
+                      <i className="benchmarkCiRange" style={{ left: `${item.lo}%`, width: `${item.hi - item.lo}%` }} />
+                      <em className="benchmarkCiPoint" style={{ left: `${item.point}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
               <p className="benchmarkNote">
-                Method: each case runs baseline once, compiles once, then executes replay twice in strict workflow checks.
+                <span className="benchmarkNoteText">
+                  Method: each case runs baseline once, compiles once, then executes replay twice in strict workflow checks.
+                  Per-case replay_reason is included when failures occur (for example: run_not_found, playbook_not_found).
+                </span>
                 <a href="https://github.com/Cognary/aionis-openclaw-plugin/blob/main/scripts/benchmark-replay-workflow.sh" target="_blank" rel="noreferrer"> View harness</a>
+                <a href="/benchmarks/20260305-162059-22132/cases.jsonl" target="_blank" rel="noreferrer"> View cases.jsonl</a>
+                <a href="/benchmarks/20260305-162059-22132/summary.json" target="_blank" rel="noreferrer"> View summary.json</a>
               </p>
             </div>
           </Reveal>
