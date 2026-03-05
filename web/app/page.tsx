@@ -30,6 +30,13 @@ const useCases = [
 
 const pipeline = ["run", "execution trace", "compile playbook", "replay", "repair", "promote"];
 
+const benchmarkKpis = [
+  { label: "Workflow Cases", value: "100" },
+  { label: "Compile Success", value: "98%" },
+  { label: "Replay Stability (R1→R2)", value: "98%" },
+  { label: "Replay Speedup (R2 vs baseline)", value: "16.51x" },
+];
+
 export default function HomePage() {
   return (
     <>
@@ -175,6 +182,46 @@ status: replay_success`}</pre>
               </Reveal>
             ))}
           </div>
+        </section>
+
+        {/* ── Benchmark ── */}
+        <section id="benchmark" className="section">
+          <Reveal>
+            <h2><span className="clawAccent">⟩</span> Benchmark: replay performance in real workflows</h2>
+          </Reveal>
+          <Reveal delay={0.04}>
+            <p className="sectionBody">
+              In a 100-case install/config benchmark, Aionis keeps replay reliability high while cutting runtime sharply after compile.
+            </p>
+          </Reveal>
+          <div className="benchmarkGrid">
+            {benchmarkKpis.map((item, idx) => (
+              <Reveal key={item.label} delay={0.06 + idx * 0.03} variant="scale">
+                <div className="benchmarkKpi">
+                  <p>{item.label}</p>
+                  <strong>{item.value}</strong>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <Reveal delay={0.2} variant="scale">
+            <div className="benchmarkCard">
+              <div className="codeHead">
+                <span className="dot" />
+                <span className="dot" />
+                <span className="dot" />
+                <strong>Benchmark Summary · run_id 20260305-162059-22132</strong>
+              </div>
+              <pre>{`baseline_avg: 2260.85ms
+replay1_avg: 260.20ms  (8.69x faster than baseline)
+replay2_avg: 136.90ms  (16.51x faster than baseline)
+replay2_vs_replay1: -123.31ms (-47.4%)`}</pre>
+              <p className="benchmarkNote">
+                Method: each case runs baseline once, compiles once, then executes replay twice in strict workflow checks.
+                <a href="https://github.com/Cognary/aionis-openclaw-plugin/blob/main/scripts/benchmark-replay-workflow.sh" target="_blank" rel="noreferrer"> View harness</a>
+              </p>
+            </div>
+          </Reveal>
         </section>
 
         {/* ── Comparison ── */}

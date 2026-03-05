@@ -672,6 +672,67 @@ h3 {
   margin-top: 16px;
 }
 
+.benchmarkGrid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.benchmarkKpi {
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-card-strong);
+  padding: 14px 16px;
+}
+
+.benchmarkKpi p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.benchmarkKpi strong {
+  margin-top: 6px;
+  display: block;
+  color: var(--text-primary);
+  font-size: 1.3rem;
+  font-family: var(--font-display);
+}
+
+.benchmarkCard {
+  margin-top: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.benchmarkCard pre {
+  margin: 0;
+  padding: 18px 20px 12px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.benchmarkNote {
+  margin: 0;
+  padding: 0 20px 18px;
+  color: var(--text-muted);
+  line-height: 1.65;
+  font-size: 0.86rem;
+}
+
+.benchmarkNote a {
+  color: var(--coral-bright);
+}
+
+.benchmarkNote a:hover {
+  color: var(--text-primary);
+}
+
 .tableWrap {
   margin-top: 24px;
   border: 1px solid var(--border-subtle);
@@ -870,7 +931,9 @@ tbody tr:last-child td {
   .demoRail,
   .demoTerminal,
   .installCard,
-  .faqItem) {
+  .faqItem,
+  .benchmarkCard,
+  .benchmarkKpi) {
   position: relative;
   isolation: isolate;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -880,7 +943,9 @@ tbody tr:last-child td {
   .demoRail,
   .demoTerminal,
   .installCard,
-  .faqItem):hover {
+  .faqItem,
+  .benchmarkCard,
+  .benchmarkKpi):hover {
   border-color: var(--border-accent);
   box-shadow: 0 8px 24px var(--shadow-coral-soft);
 }
@@ -951,6 +1016,9 @@ tbody tr:last-child td {
     width: 100%;
   }
 
+  .benchmarkGrid {
+    grid-template-columns: 1fr;
+  }
 
 
 
