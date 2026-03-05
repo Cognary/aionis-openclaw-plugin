@@ -15,5 +15,15 @@ Open http://localhost:3000
 ```bash
 cd web
 npm run build
-npm run start
 ```
+
+Static files are generated into `web/out`.
+
+## Deploy to GitHub Pages
+
+This repo includes a workflow at `.github/workflows/deploy-pages.yml`.
+
+- Push changes in `web/` to `main`.
+- GitHub Actions builds and deploys `web/out` to Pages.
+- The site URL is expected to be:
+  `https://cognary.github.io/aionis-openclaw-plugin/`
