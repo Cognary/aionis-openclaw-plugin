@@ -134,6 +134,8 @@ extract_total_tokens() {
     [
       .usage.total_tokens,
       .usage.total,
+      .compile_summary.usage_estimate.total_tokens,
+      .compile_summary.usage_estimate.total,
       .result.usage.total_tokens,
       .result.usage.total,
       .summary.usage.total_tokens,

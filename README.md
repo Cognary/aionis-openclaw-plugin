@@ -69,13 +69,13 @@ Aionis is designed as a long-running memory kernel to address those requirements
 - Auto recall on `before_agent_start` with `POST /v1/memory/context/assemble`
 - Auto capture on `agent_end` with `POST /v1/memory/write`
 - Auto policy feedback on successful turns with `POST /v1/memory/tools/feedback`
-- Exposes policy actions: `POST /v1/memory/tools/select`, `POST /v1/memory/tools/feedback`
+- Exposes policy actions: `POST /v1/memory/tools/select`, `POST /v1/memory/tools/decision`, `POST /v1/memory/tools/run`, `POST /v1/memory/tools/feedback`
 - Exposes replay actions:
   - record: `POST /v1/memory/replay/run/start`, `step/before`, `step/after`, `run/end`
   - query/compile: `POST /v1/memory/replay/runs/get`, `playbooks/compile_from_run`, `playbooks/get`
   - lifecycle/run: `POST /v1/memory/replay/playbooks/promote`, `playbooks/repair`, `playbooks/repair/review`, `playbooks/run`
 - Manual tools:
-  - memory/policy: `aionis_memory_search`, `aionis_memory_store`, `aionis_memory_context`, `aionis_policy_select`, `aionis_policy_feedback`
+  - memory/policy: `aionis_memory_search`, `aionis_memory_store`, `aionis_memory_context`, `aionis_policy_select`, `aionis_policy_decision`, `aionis_policy_run`, `aionis_policy_feedback`
   - replay: `aionis_replay_run_start`, `aionis_replay_step_before`, `aionis_replay_step_after`, `aionis_replay_run_end`, `aionis_replay_run_get`, `aionis_replay_playbook_compile`, `aionis_replay_playbook_get`, `aionis_replay_playbook_promote`, `aionis_replay_playbook_repair`, `aionis_replay_playbook_repair_review`, `aionis_replay_playbook_run`
 
 ## 30-second setup
@@ -93,6 +93,11 @@ openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode simulat
 openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode strict --backend local_process
 openclaw aionis-memory replay-selfcheck --scope clawbot:selfcheck --mode guided --backend sandbox_sync --project-id clawbot-demo
 ```
+
+Token usage telemetry (v0.2.16+):
+
+- `replay-selfcheck` output now includes compile/replay usage fields when available.
+- `playbooks/compile_from_run` usage currently comes from `estimated_char_based_v1` (estimated tokens, not provider billing tokens).
 
 ## Clawbot user flow (recommended)
 

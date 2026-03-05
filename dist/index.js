@@ -390,6 +390,25 @@ class AionisClient {
             rules_limit: 50,
         });
     }
+    async toolsDecision(args) {
+        return this.post("/v1/memory/tools/decision", {
+            tenant_id: this.cfg.tenantId,
+            scope: args.scope,
+            ...(args.decisionId ? { decision_id: args.decisionId } : {}),
+            ...(args.decisionUri ? { decision_uri: args.decisionUri } : {}),
+            ...(args.runId ? { run_id: args.runId } : {}),
+        });
+    }
+    async toolsRun(args) {
+        return this.post("/v1/memory/tools/run", {
+            tenant_id: this.cfg.tenantId,
+            scope: args.scope,
+            run_id: args.runId,
+            ...(Number.isFinite(args.decisionLimit) ? { decision_limit: args.decisionLimit } : {}),
+            ...(typeof args.includeFeedback === "boolean" ? { include_feedback: args.includeFeedback } : {}),
+            ...(Number.isFinite(args.feedbackLimit) ? { feedback_limit: args.feedbackLimit } : {}),
+        });
+    }
     async toolsFeedback(args) {
         return this.post("/v1/memory/tools/feedback", {
             tenant_id: this.cfg.tenantId,
@@ -740,6 +759,65 @@ const plugin = {
                 }
             },
         }, { name: "aionis_policy_select" });
+        api.registerTool({
+            name: "aionis_policy_decision",
+            label: "Aionis Policy Decision",
+            description: "Fetch one policy decision by decision_id/decision_uri or latest by run_id (tools/decision).",
+            parameters: Type.Object({
+                decisionId: Type.Optional(Type.String()),
+                decisionUri: Type.Optional(Type.String()),
+                runId: Type.Optional(Type.String()),
+                scope: Type.Optional(Type.String()),
+            }),
+            async execute(_toolCallId, params) {
+                try {
+                    const p = toRecord(params);
+                    const decisionId = typeof p.decisionId === "string" && p.decisionId.trim() ? p.decisionId.trim() : undefined;
+                    const decisionUri = typeof p.decisionUri === "string" && p.decisionUri.trim() ? p.decisionUri.trim() : undefined;
+                    const runId = typeof p.runId === "string" && p.runId.trim() ? p.runId.trim() : undefined;
+                    if (!decisionId && !decisionUri && !runId) {
+                        return toToolText("decisionId, decisionUri, or runId is required", { ok: false });
+                    }
+                    const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+                    const out = await client.toolsDecision({ scope, decisionId, decisionUri, runId });
+                    const selected = toRecord(out?.decision).selected_tool;
+                    return toToolText(`Decision loaded (selected_tool=${String(selected ?? "n/a")})`, out);
+                }
+                catch (err) {
+                    return toToolText(`aionis_policy_decision failed: ${formatError(err)}`, { ok: false, error: err });
+                }
+            },
+        }, { name: "aionis_policy_decision" });
+        api.registerTool({
+            name: "aionis_policy_run",
+            label: "Aionis Policy Run",
+            description: "Fetch run-level policy lifecycle and linked feedback (tools/run).",
+            parameters: Type.Object({
+                runId: Type.String({ minLength: 1 }),
+                decisionLimit: Type.Optional(Type.Number({ minimum: 1, maximum: 200 })),
+                includeFeedback: Type.Optional(Type.Boolean()),
+                feedbackLimit: Type.Optional(Type.Number({ minimum: 1, maximum: 200 })),
+                scope: Type.Optional(Type.String()),
+            }),
+            async execute(_toolCallId, params) {
+                try {
+                    const p = toRecord(params);
+                    const runId = String(p.runId ?? "").trim();
+                    if (!runId)
+                        return toToolText("runId is required", { ok: false });
+                    const scope = typeof p.scope === "string" && p.scope.trim() ? p.scope.trim() : resolved.scope;
+                    const decisionLimit = Number.isFinite(p.decisionLimit) ? Number(p.decisionLimit) : undefined;
+                    const feedbackLimit = Number.isFinite(p.feedbackLimit) ? Number(p.feedbackLimit) : undefined;
+                    const includeFeedback = typeof p.includeFeedback === "boolean" ? p.includeFeedback : undefined;
+                    const out = await client.toolsRun({ scope, runId, decisionLimit, includeFeedback, feedbackLimit });
+                    const lifecycle = toRecord(out?.lifecycle);
+                    return toToolText(`Policy run loaded (status=${String(lifecycle.status ?? "n/a")}, decisions=${String(lifecycle.decision_count ?? "n/a")})`, out);
+                }
+                catch (err) {
+                    return toToolText(`aionis_policy_run failed: ${formatError(err)}`, { ok: false, error: err });
+                }
+            },
+        }, { name: "aionis_policy_run" });
         api.registerTool({
             name: "aionis_policy_feedback",
             label: "Aionis Policy Feedback",
@@ -1505,6 +1583,10 @@ const plugin = {
                             metadata: { source: "openclaw-cli", selfcheck: true },
                         });
                         const playbookId = String(compiled?.playbook_id ?? compiled?.playbook?.playbook_id ?? "");
+                        const compileUsageTotal = extractUsageTotalTokens(compiled);
+                        const compileUsagePrompt = extractUsagePromptTokens(compiled);
+                        const compileUsageCompletion = extractUsageCompletionTokens(compiled);
+                        const compileUsageSource = extractUsageSource(compiled);
                         const replayRun = playbookId
                             ? await client.replayPlaybookRun({
                                 scope,
@@ -1519,6 +1601,7 @@ const plugin = {
                                 maxSteps: 20,
                             })
                             : null;
+                        const replayUsageTotal = extractUsageTotalTokens(replayRun);
                         const replayStatus = extractReplayRunStatus(replayRun);
                         const replayRunId = extractReplayRunId(replayRun);
                         const replayRunUri = extractReplayRunUri(replayRun);
@@ -1540,10 +1623,15 @@ const plugin = {
                             step_id: stepBefore?.step_id ?? null,
                             run_end_status: ended?.status ?? "success",
                             playbook_id: playbookId || null,
+                            compile_usage_total_tokens: compileUsageTotal,
+                            compile_usage_prompt_tokens: compileUsagePrompt,
+                            compile_usage_completion_tokens: compileUsageCompletion,
+                            compile_usage_source: compileUsageSource,
                             replay_status: replayStatus,
                             replay_run_id: replayRunId,
                             replay_run_uri: replayRunUri,
                             replay_readiness: replayRun?.summary?.replay_readiness ?? null,
+                            replay_usage_total_tokens: replayUsageTotal,
                             step_after_ok: !!stepAfter,
                         }, null, 2));
                     }
@@ -1711,6 +1799,68 @@ function toNonEmptyString(v) {
         return null;
     const s = v.trim();
     return s.length > 0 ? s : null;
+}
+function firstNumeric(values) {
+    for (const v of values) {
+        if (typeof v === "number" && Number.isFinite(v))
+            return v;
+    }
+    return null;
+}
+function extractUsageTotalTokens(v) {
+    const obj = toRecord(v);
+    const usage = toRecord(obj.usage);
+    const result = toRecord(obj.result);
+    const resultUsage = toRecord(result.usage);
+    const summary = toRecord(obj.summary);
+    const summaryUsage = toRecord(summary.usage);
+    const run = toRecord(obj.run);
+    const runUsage = toRecord(run.usage);
+    const metrics = toRecord(obj.metrics);
+    const runMetrics = toRecord(run.metrics);
+    const meta = toRecord(obj.meta);
+    const metaUsage = toRecord(meta.usage);
+    const compileSummary = toRecord(obj.compile_summary);
+    const usageEstimate = toRecord(compileSummary.usage_estimate);
+    return firstNumeric([
+        usage.total_tokens,
+        usage.total,
+        resultUsage.total_tokens,
+        resultUsage.total,
+        summaryUsage.total_tokens,
+        summaryUsage.total,
+        runUsage.total_tokens,
+        runUsage.total,
+        runMetrics.total_tokens,
+        runMetrics.tokens_total,
+        metrics.total_tokens,
+        metrics.tokens_total,
+        metaUsage.total_tokens,
+        metaUsage.total,
+        usageEstimate.total_tokens,
+        usageEstimate.total,
+    ]);
+}
+function extractUsagePromptTokens(v) {
+    const obj = toRecord(v);
+    const usage = toRecord(obj.usage);
+    const compileSummary = toRecord(obj.compile_summary);
+    const usageEstimate = toRecord(compileSummary.usage_estimate);
+    return firstNumeric([usage.prompt_tokens, usageEstimate.prompt_tokens]);
+}
+function extractUsageCompletionTokens(v) {
+    const obj = toRecord(v);
+    const usage = toRecord(obj.usage);
+    const compileSummary = toRecord(obj.compile_summary);
+    const usageEstimate = toRecord(compileSummary.usage_estimate);
+    return firstNumeric([usage.completion_tokens, usageEstimate.completion_tokens]);
+}
+function extractUsageSource(v) {
+    const obj = toRecord(v);
+    const usage = toRecord(obj.usage);
+    const compileSummary = toRecord(obj.compile_summary);
+    const usageEstimate = toRecord(compileSummary.usage_estimate);
+    return toNonEmptyString(usage.source) ?? toNonEmptyString(usageEstimate.source) ?? null;
 }
 function extractReplayRunStatus(v) {
     const obj = toRecord(v);

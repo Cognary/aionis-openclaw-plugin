@@ -55,6 +55,8 @@ Expected output contains:
 ```
 
 For strict/guided modes, also check `replay_status` in output to confirm execution replay result.
+For v0.2.16+, replay selfcheck output may include `compile_usage_*` and `replay_usage_total_tokens` fields.
+`compile_usage_*` is an estimate channel from Aionis compile telemetry (`estimated_char_based_v1`), not provider billing tokens.
 
 `replay-selfcheck` validates:
 
