@@ -26,12 +26,25 @@ This plugin brings Aionis into OpenClaw (including Clawbot) and turns memory int
 
 `Memory -> Policy -> Action -> Replay`
 
-## What's new in v0.1.2
+## What's new in v0.1.3
 
 - Replay execution integration expanded for Clawbot workflows and repair-review controls.
 - Replay selfcheck improved with strict/guided mode checks and stronger status gating.
 - Local standalone bootstrap defaults aligned to Aionis `standalone-v0.2.16`.
 - Public landing page added and deployed on GitHub Pages.
+- Policy lifecycle tools (`tools/decision`, `tools/run`) added to the plugin surface.
+- Replay usage telemetry wiring added for compile/replay output.
+
+## Benchmark
+
+Real workflow benchmark (100 runs)
+
+- Baseline success rate: `98%`
+- Replay success rate: `98%`
+- Replay stability: `98%`
+- Latency improvement:
+- `9.21x` faster on replay1
+- `19.29x` faster on replay2
 
 ## Why Aionis
 
