@@ -10,7 +10,7 @@ This guide is for end users who want a local-first setup with simple command-lin
 ## 2. Install plugin from npm
 
 ```bash
-openclaw plugins install @aionis/openclaw
+openclaw plugins install @aionis/openclaw-aionis-memory
 ```
 
 ## 3. One-command bootstrap (recommended)

@@ -1,12 +1,12 @@
 # OpenClaw Aionis Memory Plugin
 
-[![npm version](https://img.shields.io/npm/v/%40aionis%2Fopenclaw.svg)](https://www.npmjs.com/package/@aionis/openclaw)
-[![npm downloads](https://img.shields.io/npm/dm/%40aionis%2Fopenclaw.svg)](https://www.npmjs.com/package/@aionis/openclaw)
+[![npm version](https://img.shields.io/npm/v/%40aionis%2Fopenclaw-aionis-memory.svg)](https://www.npmjs.com/package/@aionis/openclaw-aionis-memory)
+[![npm downloads](https://img.shields.io/npm/dm/%40aionis%2Fopenclaw-aionis-memory.svg)](https://www.npmjs.com/package/@aionis/openclaw-aionis-memory)
 [![GitHub release](https://img.shields.io/github/v/release/Cognary/aionis-openclaw-plugin)](https://github.com/Cognary/aionis-openclaw-plugin/releases)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Cognary/aionis-openclaw-plugin/blob/main/LICENSE)
 
 Website: https://clawbot.aionisos.com/  
-NPM: https://www.npmjs.com/package/@aionis/openclaw  
+NPM: https://www.npmjs.com/package/@aionis/openclaw-aionis-memory  
 Releases: https://github.com/Cognary/aionis-openclaw-plugin/releases
 
 Most agent memory plugins only store chat history.
@@ -94,7 +94,7 @@ Aionis is designed as a long-running memory kernel to address those requirements
 ## 30-second setup
 
 ```bash
-openclaw plugins install @aionis/openclaw && \
+openclaw plugins install @aionis/openclaw-aionis-memory && \
 openclaw aionis-memory bootstrap && \
 openclaw aionis-memory selfcheck --scope clawbot:selfcheck
 ```
@@ -117,7 +117,7 @@ Token usage telemetry (v0.2.16+):
 1. Install and bootstrap:
 
 ```bash
-openclaw plugins install @aionis/openclaw
+openclaw plugins install @aionis/openclaw-aionis-memory
 openclaw aionis-memory bootstrap
 ```
 
@@ -195,7 +195,7 @@ This script writes:
 2. Install plugin (from npm):
 
 ```bash
-openclaw plugins install @aionis/openclaw
+openclaw plugins install @aionis/openclaw-aionis-memory
 ```
 
 3. Bootstrap plugin config automatically:

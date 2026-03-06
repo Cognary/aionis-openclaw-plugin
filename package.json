@@ -1,5 +1,5 @@
 {
-  "name": "@aionis/openclaw",
+  "name": "@aionis/openclaw-aionis-memory",
   "version": "0.1.3",
   "description": "OpenClaw memory plugin powered by Aionis standalone or hosted API",
   "type": "module",

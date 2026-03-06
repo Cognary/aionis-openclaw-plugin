@@ -72,7 +72,7 @@ export default function HomePage() {
             <p className="releasePill">
               Latest release: <a href="https://github.com/Cognary/aionis-openclaw-plugin/releases/tag/v0.1.3" target="_blank" rel="noreferrer">{latestReleaseTag}</a>
               <i>·</i>
-              NPM: <a href="https://www.npmjs.com/package/@aionis/openclaw" target="_blank" rel="noreferrer">{latestNpmVersion}</a>
+              NPM: <a href="https://www.npmjs.com/package/@aionis/openclaw-aionis-memory" target="_blank" rel="noreferrer">{latestNpmVersion}</a>
             </p>
           </Reveal>
           <Reveal delay={0.08}>
@@ -317,7 +317,7 @@ replay2_vs_replay1: -123.31ms (-47.4%)`}</pre>
                 <span className="dot" />
                 <strong>Terminal</strong>
               </div>
-              <pre>{`openclaw plugins install @aionis/openclaw@0.1.3
+              <pre>{`openclaw plugins install @aionis/openclaw-aionis-memory@0.1.3
 openclaw aionis-memory bootstrap
 openclaw aionis-memory selfcheck`}</pre>
             </div>
@@ -380,7 +380,7 @@ openclaw aionis-memory selfcheck`}</pre>
           <ul className="footerLinks">
             <li><a href="https://github.com/Cognary/aionis-openclaw-plugin" target="_blank" rel="noreferrer">GitHub</a></li>
             <li><a href="https://github.com/Cognary/aionis-openclaw-plugin/blob/main/README.md" target="_blank" rel="noreferrer">Docs</a></li>
-            <li><a href="https://www.npmjs.com/package/@aionis/openclaw" target="_blank" rel="noreferrer">NPM Plugin</a></li>
+            <li><a href="https://www.npmjs.com/package/@aionis/openclaw-aionis-memory" target="_blank" rel="noreferrer">NPM Plugin</a></li>
           </ul>
           <p className="disclaimer">Replayable execution. Policy-aware automation. Persistent agent memory.</p>
         </footer>

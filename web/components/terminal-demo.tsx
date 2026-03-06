@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 
 const lines = [
-  "$ openclaw plugins install @aionis/openclaw",
+  "$ openclaw plugins install @aionis/openclaw-aionis-memory",
   "$ agent.run \"install clawbot\"",
   "[trace] execution trace recorded",
   "[compile] playbook created: pbk_0f21",
