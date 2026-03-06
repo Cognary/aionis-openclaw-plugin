@@ -76,5 +76,5 @@ npm publish --access public
 Install command after publish:
 
 ```bash
-openclaw plugins install @aionis/openclaw
+openclaw plugins install @aionis/openclaw-aionis-memory
 ```
